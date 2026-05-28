@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RJCD Gebäudereinigung – Dispoplan</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #f5f5f4; --bg2: #ffffff; --bg3: #e8e6e1;
+      --text: #1a1a18; --text2: #5a5a56; --text3: #9a9a94;
+      --border: rgba(0,0,0,0.10); --border2: rgba(0,0,0,0.18);
+      --green: #1D9E75; --green-bg: #E1F5EE; --green-text: #085041;
+      --amber: #BA7517; --amber-bg: #FAEEDA; --amber-text: #633806;
+      --red: #A32D2D; --red-bg: #FCEBEB; --red-text: #791F1F;
+      --blue: #185FA5; --blue-bg: #E6F1FB; --blue-text: #0C447C;
+      --radius: 8px; --radius-lg: 12px;
+      --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1c1c1a; --bg2: #252523; --bg3: #2e2e2b;
+        --text: #e8e6e0; --text2: #a8a8a0; --text3: #686864;
+        --border: rgba(255,255,255,0.10); --border2: rgba(255,255,255,0.18);
+      }
+    }
+    body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; }
+    .app { display: grid; grid-template-rows: 56px 1fr; min-height: 100vh; }
+
+    /* HEADER */
+    .header { background: var(--bg2); border-bottom: 0.5px solid var(--border2); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .logo { font-size: 15px; font-weight: 500; color: var(--text); }
+    .logo span { color: var(--text2); font-weight: 400; }
+    .nav-tabs { display: flex; gap: 2px; }
+    .nav-tab { font-size: 13px; padding: 6px 14px; border-radius: var(--radius); border: none; background: none; cursor: pointer; color: var(--text2); font-weight: 500; }
+    .nav-tab.active { background: var(--bg3); color: var(--text); }
+    .nav-tab:hover:not(.active) { background: var(--bg); }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+    .status-label { font-size: 12px; color: var(--text2); }
+
+    /* MAIN */
+    .main { padding: 20px; max-width: 1200px; margin: 0 auto; width: 100%; }
+
+    /* KPI */
+    .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+    .kpi { background: var(--bg2); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 14px 16px; }
+    .kpi-label { font-size: 11px; color: var(--text2); margin-bottom: 6px; }
+    .kpi-value { font-size: 22px; font-weight: 500; color: var(--text); }
+    .kpi-sub { font-size: 11px; color: var(--text3); margin-top: 3px; }
+
+    /* TOOLBAR */
+    .toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 8px; }
+    .week-nav { display: flex; align-items: center; gap: 8px; }
+    .week-btn { background: var(--bg2); border: 0.5px solid var(--border2); border-radius: var(--radius); padding: 5px 10px; font-size: 13px; cursor: pointer; color: var(--text2); }
+    .week-btn:hover { background: var(--bg3); }
+    .week-label { font-size: 14px; font-weight: 500; color: var(--text); min-width: 200px; text-align: center; }
+    .toolbar-right { display: flex; gap: 8px; align-items: center; }
+    .btn-primary { background: var(--text); color: var(--bg2); border: none; border-radius: var(--radius); padding: 7px 16px; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 5px; }
+    .btn-primary:hover { opacity: 0.85; }
+    .view-toggle { display: flex; gap: 2px; background: var(--bg3); border-radius: var(--radius); padding: 3px; }
+    .vt-btn { font-size: 12px; padding: 4px 12px; border-radius: 6px; border: none; background: none; cursor: pointer; color: var(--text2); font-weight: 500; }
+    .vt-btn.active { background: var(--bg2); color: var(--text); border: 0.5px solid var(--border); }
+
+    /* GRID */
+    .dispo-grid { display: grid; grid-template-columns: 110px repeat(6, 1fr); border: 0.5px solid var(--border2); border-radius: var(--radius-lg); overflow: hidden; background: var(--bg2); }
+    .grid-hdr { background: var(--bg3); padding: 8px 6px; font-size: 11px; font-weight: 500; color: var(--text2); text-align: center; border-right: 0.5px solid var(--border); border-bottom: 0.5px solid var(--border); }
+    .grid-hdr.today { color: var(--blue-text); background: var(--blue-bg); }
+    .grid-hdr .day-umsatz { font-size: 10px; font-weight: 500; color: var(--green); margin-top: 3px; }
+    .ma-label { background: var(--bg3); padding: 8px 8px; display: flex; align-items: center; gap: 6px; border-right: 0.5px solid var(--border); border-bottom: 0.5px solid var(--border); min-height: 52px; }
+    .av { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 500; flex-shrink: 0; }
+    .ma-name-label { font-size: 10px; font-weight: 500; color: var(--text); }
+    .ma-spr { font-size: 9px; color: var(--text3); }
+    .grid-cell { padding: 4px; border-right: 0.5px solid var(--border); border-bottom: 0.5px solid var(--border); min-height: 52px; vertical-align: top; }
+    .chip { border-radius: 6px; padding: 4px 6px; font-size: 10px; cursor: pointer; margin-bottom: 3px; transition: opacity .12s; }
+    .chip:hover { opacity: 0.8; }
+    .chip-obj { font-weight: 500; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .chip-zeit { font-size: 9px; opacity: 0.75; line-height: 1.4; }
+    .chip-umsatz { font-size: 9px; font-weight: 500; margin-top: 1px; }
+    .add-btn { width: 100%; border: none; background: none; cursor: pointer; color: var(--text3); font-size: 16px; padding: 4px; border-radius: 4px; display: block; }
+    .add-btn:hover { background: var(--bg3); color: var(--text2); }
+    .sum-corner { background: var(--bg3); padding: 6px 8px; font-size: 11px; color: var(--text2); border-right: 0.5px solid var(--border); display: flex; align-items: center; }
+    .sum-cell { background: var(--bg3); padding: 6px 4px; font-size: 11px; font-weight: 500; color: var(--green); text-align: center; border-right: 0.5px solid var(--border); }
+
+    /* LOADING */
+    .loading { display: flex; align-items: center; justify-content: center; padding: 60px; gap: 10px; color: var(--text2); font-size: 14px; }
+    .spinner { width: 20px; height: 20px; border: 2px solid var(--border2); border-top-color: var(--text); border-radius: 50%; animation: spin .7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .error-box { background: var(--red-bg); border: 0.5px solid var(--red); border-radius: var(--radius-lg); padding: 16px; color: var(--red-text); font-size: 13px; margin: 20px 0; }
+
+    /* MODAL */
+    .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); align-items: flex-start; justify-content: center; z-index: 100; padding-top: 60px; }
+    .modal-bg.open { display: flex; }
+    .modal { background: var(--bg2); border-radius: var(--radius-lg); border: 0.5px solid var(--border2); padding: 20px; width: 340px; max-height: 85vh; overflow-y: auto; }
+    .modal h3 { font-size: 15px; font-weight: 500; margin-bottom: 16px; }
+    .modal label { font-size: 11px; color: var(--text2); display: block; margin-bottom: 3px; margin-top: 12px; }
+    .modal input, .modal select, .modal textarea { width: 100%; font-size: 13px; padding: 7px 10px; border: 0.5px solid var(--border2); border-radius: var(--radius); background: var(--bg); color: var(--text); }
+    .modal textarea { min-height: 56px; resize: vertical; font-family: var(--font); }
+    .r2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .kalk-box { background: var(--bg3); border-radius: var(--radius); padding: 10px 12px; margin-top: 12px; }
+    .kalk-box .kbl { font-size: 11px; font-weight: 500; margin-bottom: 8px; }
+    .kalk-row { display: flex; justify-content: space-between; font-size: 11px; color: var(--text2); margin-bottom: 3px; }
+    .kalk-row span:last-child { font-weight: 500; color: var(--text); }
+    .kalk-row.total { border-top: 0.5px solid var(--border2); padding-top: 5px; margin-top: 5px; }
+    .modal-btns { display: flex; gap: 8px; margin-top: 16px; }
+    .mbtn-save { flex: 1; background: var(--text); color: var(--bg2); border: none; border-radius: var(--radius); padding: 9px; font-size: 13px; cursor: pointer; }
+    .mbtn-cancel { background: none; border: 0.5px solid var(--border2); border-radius: var(--radius); padding: 9px; font-size: 13px; cursor: pointer; color: var(--text2); }
+    .mbtn-del { background: none; border: 0.5px solid var(--red); border-radius: var(--radius); padding: 9px; font-size: 13px; cursor: pointer; color: var(--red); }
+
+    /* VIEWS */
+    #view-mitarbeiter, #view-objekte { display: none; }
+    .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+    .card { background: var(--bg2); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 16px; cursor: pointer; transition: border-color .15s; }
+    .card:hover { border-color: var(--border2); }
+    .card-top { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .card-name { font-size: 14px; font-weight: 500; }
+    .card-sub { font-size: 11px; color: var(--text2); margin-top: 2px; }
+    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .detail-box { background: var(--bg3); border-radius: var(--radius); padding: 7px 9px; }
+    .detail-box .dl { font-size: 10px; color: var(--text2); margin-bottom: 2px; }
+    .detail-box .dv { font-size: 12px; font-weight: 500; }
+    .pill { display: inline-block; font-size: 10px; font-weight: 500; padding: 2px 8px; border-radius: 10px; }
+
+    @media (max-width: 768px) {
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+      .dispo-grid { grid-template-columns: 80px repeat(6, 1fr); font-size: 10px; }
+      .main { padding: 12px; }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <div class="header-left">
+      <div class="logo">RJCD <span>Gebäudereinigung</span></div>
+      <nav class="nav-tabs">
+        <button class="nav-tab active" onclick="setView('dispoplan')"><i class="ti ti-calendar-week"></i> Dispoplan</button>
+        <button class="nav-tab" onclick="setView('mitarbeiter')"><i class="ti ti-users"></i> Mitarbeiter</button>
+        <button class="nav-tab" onclick="setView('objekte')"><i class="ti ti-building"></i> Objekte</button>
+      </nav>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <div class="status-dot" id="status-dot"></div>
+      <span class="status-label" id="status-label">Verbinde...</span>
+    </div>
+  </header>
+
+  <main class="main">
+    <div id="view-dispoplan">
+      <div class="kpi-grid" id="kpi-grid">
+        <div class="kpi"><div class="kpi-label">Lade...</div><div class="kpi-value">—</div></div>
+        <div class="kpi"><div class="kpi-label">Lade...</div><div class="kpi-value">—</div></div>
+        <div class="kpi"><div class="kpi-label">Lade...</div><div class="kpi-value">—</div></div>
+        <div class="kpi"><div class="kpi-label">Lade...</div><div class="kpi-value">—</div></div>
+      </div>
+      <div class="toolbar">
+        <div class="week-nav">
+          <button class="week-btn" onclick="changeWeek(-1)"><i class="ti ti-chevron-left"></i></button>
+          <span class="week-label" id="week-label">Lade...</span>
+          <button class="week-btn" onclick="changeWeek(1)"><i class="ti ti-chevron-right"></i></button>
+        </div>
+        <div class="toolbar-right">
+          <div class="view-toggle">
+            <button class="vt-btn active" onclick="setGridView('woche')">Woche</button>
+            <button class="vt-btn" onclick="setGridView('tag')">Tag</button>
+          </div>
+          <button class="btn-primary" onclick="openAuftragModal(null,null)">
+            <i class="ti ti-plus"></i> Auftrag
+          </button>
+        </div>
+      </div>
+      <div id="grid-container">
+        <div class="loading"><div class="spinner"></div> Daten werden geladen...</div>
+      </div>
+    </div>
+
+    <div id="view-mitarbeiter">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div style="font-size:16px;font-weight:500">Mitarbeiter</div>
+        <button class="btn-primary" onclick="openMaModal(null)"><i class="ti ti-plus"></i> Neu</button>
+      </div>
+      <div class="card-grid" id="ma-grid">
+        <div class="loading"><div class="spinner"></div> Lade Mitarbeiter...</div>
+      </div>
+    </div>
+
+    <div id="view-objekte">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div style="font-size:16px;font-weight:500">Objekte &amp; Kunden</div>
+        <button class="btn-primary" onclick="openObjModal(null)"><i class="ti ti-plus"></i> Neu</button>
+      </div>
+      <div class="card-grid" id="obj-grid">
+        <div class="loading"><div class="spinner"></div> Lade Objekte...</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- AUFTRAG MODAL -->
+<div class="modal-bg" id="auftrag-modal">
+  <div class="modal">
+    <h3 id="auftrag-modal-title">Neuer Auftrag</h3>
+    <label>Mitarbeiter</label><select id="am-ma"></select>
+    <label>Objekt</label><select id="am-obj"></select>
+    <label>Datum</label><input type="date" id="am-datum">
+    <div class="r2">
+      <div><label>Soll-Beginn</label><input type="time" id="am-start" value="07:00"></div>
+      <div><label>Soll-Ende</label><input type="time" id="am-end" value="09:00"></div>
+    </div>
+    <label>Aufgaben / Leistung</label>
+    <textarea id="am-aufg" placeholder="z.B. Böden wischen, WC reinigen, Müll entsorgen"></textarea>
+    <label>Anmerkung</label>
+    <input type="text" id="am-anm" placeholder="z.B. Sonderreinigung">
+    <div class="kalk-box" id="am-kalk">
+      <div class="kbl">Umsatz-Kalkulation</div>
+      <div id="am-kalk-inhalt"><span style="font-size:11px;color:var(--text2)">Objekt und Zeiten wählen...</span></div>
+    </div>
+    <div class="modal-btns">
+      <button class="mbtn-cancel" onclick="closeModal('auftrag-modal')">Abbrechen</button>
+      <button class="mbtn-del" id="am-del" style="display:none" onclick="deleteAuftrag()"><i class="ti ti-trash"></i></button>
+      <button class="mbtn-save" onclick="saveAuftrag()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- MITARBEITER MODAL -->
+<div class="modal-bg" id="ma-modal">
+  <div class="modal">
+    <h3 id="ma-modal-title">Neuer Mitarbeiter</h3>
+    <div class="r2">
+      <div><label>Nachname</label><input type="text" id="mm-nach" placeholder="Tarnecka"></div>
+      <div><label>Vorname</label><input type="text" id="mm-vor" placeholder="Anna"></div>
+    </div>
+    <label>Telefon</label><input type="tel" id="mm-tel" placeholder="+49 151 ...">
+    <label>E-Mail</label><input type="email" id="mm-mail">
+    <div class="r2">
+      <div><label>Stundenlohn (€)</label><input type="number" id="mm-lohn" step="0.50" min="12" placeholder="14.00"></div>
+      <div><label>Soll-Stunden/Woche</label><input type="number" id="mm-std" min="1" max="40" placeholder="20"></div>
+    </div>
+    <label>App-Sprache</label>
+    <select id="mm-spr">
+      <option value="de">Deutsch</option>
+      <option value="pl">Polnisch</option>
+      <option value="ru">Russisch</option>
+      <option value="ro">Rumänisch</option>
+      <option value="uk">Ukrainisch</option>
+    </select>
+    <label>Farbe im Dispoplan</label>
+    <select id="mm-farbe">
+      <option value="0">Blau</option>
+      <option value="1">Grün</option>
+      <option value="2">Lachs</option>
+      <option value="3">Gelb</option>
+      <option value="4">Lila</option>
+      <option value="5">Rosa</option>
+      <option value="6">Grau</option>
+    </select>
+    <div class="modal-btns">
+      <button class="mbtn-cancel" onclick="closeModal('ma-modal')">Abbrechen</button>
+      <button class="mbtn-del" id="mm-del" style="display:none" onclick="deleteMa()"><i class="ti ti-user-off"></i> Deaktivieren</button>
+      <button class="mbtn-save" onclick="saveMa()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- OBJEKT MODAL -->
+<div class="modal-bg" id="obj-modal">
+  <div class="modal">
+    <h3 id="obj-modal-title">Neues Objekt</h3>
+    <label>Name / Kunde</label><input type="text" id="om-name" placeholder="z.B. Dellner">
+    <label>Adresse</label><input type="text" id="om-adresse" placeholder="Straße, PLZ Ort">
+    <label>Ansprechpartner</label><input type="text" id="om-ap">
+    <label>Telefon</label><input type="tel" id="om-tel">
+    <div class="r2">
+      <div><label>Monatspauschal (€)</label><input type="number" id="om-preis" placeholder="1200" min="0"></div>
+      <div><label>Soll-Stunden/Monat</label><input type="number" id="om-std" placeholder="48" min="0"></div>
+    </div>
+    <label>Leistungsbeschreibung</label>
+    <textarea id="om-leistung" placeholder="z.B. Böden, WC, Flure, Sozialräume 3x wöchentlich"></textarea>
+    <div class="modal-btns">
+      <button class="mbtn-cancel" onclick="closeModal('obj-modal')">Abbrechen</button>
+      <button class="mbtn-del" id="om-del" style="display:none" onclick="deleteObj()"><i class="ti ti-trash"></i> Deaktivieren</button>
+      <button class="mbtn-save" onclick="saveObj()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<script src="supabase.js"></script>
+<script>
+const FARBEN = [
+  {bg:'#B5D4F4',txt:'#0C447C'},{bg:'#9FE1CB',txt:'#085041'},
+  {bg:'#F5C4B3',txt:'#712B13'},{bg:'#FAC775',txt:'#633806'},
+  {bg:'#CECBF6',txt:'#3C3489'},{bg:'#F4C0D1',txt:'#72243E'},
+  {bg:'#D3D1C7',txt:'#444441'}
+]
+const SPR_NAMEN = {de:'Deutsch',pl:'Polnisch',ru:'Russisch',ro:'Rumänisch',uk:'Ukrainisch'}
+const TAGE_KURZ = ['Mo','Di','Mi','Do','Fr','Sa','So']
+
+let mitarbeiter = [], objekte = [], auftraege = []
+let curWeek = 0, curGridView = 'woche', curView = 'dispoplan'
+let editAuftragId = null, editMaId = null, editObjId = null
+
+// ── INIT ──────────────────────────────────────────────────────
+async function init() {
+  try {
+    setStatus('Verbinde...', false)
+    mitarbeiter = await sbGet('mitarbeiter', 'aktiv=eq.true&order=nachname')
+    objekte     = await sbGet('objekte',     'aktiv=eq.true&order=name')
+    setStatus('Verbunden', true)
+    await loadWoche()
+    renderMaGrid()
+    renderObjGrid()
+  } catch(e) {
+    setStatus('Fehler', false)
+    document.getElementById('grid-container').innerHTML =
+      `<div class="error-box"><i class="ti ti-alert-circle"></i> ${e.message}<br><small>Bitte SQL-Script in Supabase ausführen (rjcd_supabase_setup.sql)</small></div>`
+  }
+}
+
+function setStatus(txt, ok) {
+  document.getElementById('status-label').textContent = txt
+  document.getElementById('status-dot').style.background = ok ? 'var(--green)' : '#E24B4A'
+}
+
+// ── WOCHE ─────────────────────────────────────────────────────
+function getMonday(offset = 0) {
+  const d = new Date()
+  const day = d.getDay() || 7
+  d.setDate(d.getDate() - day + 1 + offset * 7)
+  d.setHours(0,0,0,0)
+  return d
+}
+function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate()+n); return r }
+function fmt(d) { return d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'}) }
+function getKW(d) {
+  const t = new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()))
+  t.setUTCDate(t.getUTCDate()+4-(t.getUTCDay()||7))
+  const y = t.getUTCFullYear()
+  return Math.ceil(((t - new Date(Date.UTC(y,0,4)))/86400000+1)/7)
+}
+function toISO(d) { return d.toISOString().split('T')[0] }
+function toMin(t) { if(!t) return 0; const[h,m]=t.split(':').map(Number); return h*60+m }
+function calcH(s,e) { return Math.max(0,(toMin(e)-toMin(s))/60) }
+function fmtEur(n) { return n.toLocaleString('de-DE',{minimumFractionDigits:0,maximumFractionDigits:0})+'€' }
+
+async function loadWoche() {
+  const mo = getMonday(curWeek)
+  const so = addDays(mo, 6)
+  document.getElementById('week-label').textContent =
+    `KW ${getKW(mo)} · ${fmt(mo)} – ${fmt(so)}.${so.getFullYear()}`
+  try {
+    auftraege = await sbGet('auftraege',
+      `datum=gte.${toISO(mo)}&datum=lte.${toISO(so)}&order=datum,soll_start`)
+  } catch(e) {
+    auftraege = []
+  }
+  renderGrid()
+  renderKPI()
+}
+
+function changeWeek(d) { curWeek += d; loadWoche() }
+
+// ── UMSATZ ────────────────────────────────────────────────────
+function getObjData(id) { return objekte.find(o=>o.id===id) || {} }
+function auftragUmsatz(a) {
+  const o = getObjData(a.objekt_id)
+  if(!o.monatspreis || !o.monatsstunden) return 0
+  return (o.monatspreis / o.monatsstunden) * calcH(a.soll_start, a.soll_ende)
+}
+function auftragLohn(a) {
+  const ma = mitarbeiter.find(m=>m.id===a.mitarbeiter_id) || {}
+  return calcH(a.soll_start, a.soll_ende) * (ma.stundenlohn || 14)
+}
+
+// ── KPI ───────────────────────────────────────────────────────
+function renderKPI() {
+  const wU = auftraege.reduce((s,a)=>s+auftragUmsatz(a),0)
+  const wH = auftraege.reduce((s,a)=>s+calcH(a.soll_start,a.soll_ende),0)
+  const wL = auftraege.reduce((s,a)=>s+auftragLohn(a),0)
+  const marge = wU > 0 ? Math.round((wU-wL)/wU*100) : 0
+  const aktivObj = new Set(auftraege.map(a=>a.objekt_id)).size
+  const monatU = Array.from(new Set(auftraege.map(a=>a.objekt_id)))
+    .reduce((s,id)=>s+(getObjData(id).monatspreis||0),0)
+  document.getElementById('kpi-grid').innerHTML = `
+    <div class="kpi"><div class="kpi-label">Wochenumsatz</div><div class="kpi-value" style="color:var(--green)">${fmtEur(wU)}</div><div class="kpi-sub">${wH.toFixed(1)}h Soll-Stunden</div></div>
+    <div class="kpi"><div class="kpi-label">Monatsumsatz (Hochrechnung)</div><div class="kpi-value">${fmtEur(monatU)}</div><div class="kpi-sub">${aktivObj} aktive Objekte</div></div>
+    <div class="kpi"><div class="kpi-label">Rohertrag nach Lohn</div><div class="kpi-value" style="color:${marge>40?'var(--green)':marge>20?'var(--amber)':'var(--red)'}">${marge}%</div><div class="kpi-sub">Lohnkosten: ${fmtEur(wL)}</div></div>
+    <div class="kpi"><div class="kpi-label">Mitarbeiter aktiv</div><div class="kpi-value">${mitarbeiter.length}</div><div class="kpi-sub">${mitarbeiter.filter(m=>m.sprache==='pl').length}× PL · ${mitarbeiter.filter(m=>m.sprache==='de').length}× DE</div></div>
+  `
+}
+
+// ── GRID ──────────────────────────────────────────────────────
+function renderGrid() {
+  const mo = getMonday(curWeek)
+  const today = new Date(); today.setHours(0,0,0,0)
+  const tagU = Array(7).fill(0)
+  auftraege.forEach(a => {
+    const d = new Date(a.datum)
+    const idx = Math.round((d - mo) / 86400000)
+    if(idx >= 0 && idx < 7) tagU[idx] += auftragUmsatz(a)
+  })
+
+  let html = '<div class="dispo-grid">'
+  // Ecke
+  html += '<div class="grid-hdr" style="background:var(--bg3);border-right:0.5px solid var(--border);border-bottom:0.5px solid var(--border)"></div>'
+  // Tage Header
+  for(let d=0; d<6; d++) {
+    const dd = addDays(mo, d)
+    const isToday = dd.getTime() === today.getTime()
+    html += `<div class="grid-hdr ${isToday?'today':''}">
+      <div style="font-size:10px">${TAGE_KURZ[d]}</div>
+      <div style="font-size:12px;font-weight:500">${fmt(dd)}</div>
+      ${tagU[d]>0?`<div class="day-umsatz">${fmtEur(tagU[d])}</div>`:''}
+    </div>`
+  }
+
+  // MA Zeilen
+  mitarbeiter.forEach(ma => {
+    const f = FARBEN[ma.farbe_idx || 0]
+    const ini = ((ma.vorname?ma.vorname[0]:'') + (ma.nachname?ma.nachname[0]:'')).toUpperCase() || '?'
+    html += `<div class="ma-label">
+      <div class="av" style="background:${f.bg};color:${f.txt}">${ini}</div>
+      <div>
+        <div class="ma-name-label">${ma.nachname}</div>
+        <div class="ma-spr">${(ma.sprache||'de').toUpperCase()}</div>
+      </div>
+    </div>`
+
+    for(let d=0; d<6; d++) {
+      const dd = addDays(mo, d)
+      const dayStr = toISO(dd)
+      const tagesA = auftraege.filter(a => a.datum === dayStr && a.mitarbeiter_id === ma.id)
+      html += '<div class="grid-cell">'
+      tagesA.forEach(a => {
+        const u = auftragUmsatz(a)
+        const obj = getObjData(a.objekt_id)
+        html += `<div class="chip" style="background:${f.bg};color:${f.txt}" onclick="openAuftragModal('${a.id}',null)">
+          <div class="chip-obj">${obj.name||'?'}</div>
+          <div class="chip-zeit">${a.soll_start||''}${a.soll_ende?'–'+a.soll_ende:''}</div>
+          ${u>0?`<div class="chip-umsatz">${fmtEur(u)}</div>`:''}
+        </div>`
+      })
+      html += `<button class="add-btn" onclick="openAuftragModal(null,'${ma.id}','${dayStr}')">+</button>`
+      html += '</div>'
+    }
+  })
+
+  // Summen-Zeile
+  html += '<div class="sum-corner">Tagessumme</div>'
+  for(let d=0; d<6; d++) {
+    html += `<div class="sum-cell">${tagU[d]>0?fmtEur(tagU[d]):'—'}</div>`
+  }
+
+  html += '</div>'
+  document.getElementById('grid-container').innerHTML = html
+}
+
+// ── MITARBEITER VIEW ──────────────────────────────────────────
+function renderMaGrid() {
+  if(!mitarbeiter.length) {
+    document.getElementById('ma-grid').innerHTML = '<div style="color:var(--text2);font-size:13px;padding:20px">Noch keine Mitarbeiter angelegt.</div>'
+    return
+  }
+  document.getElementById('ma-grid').innerHTML = mitarbeiter.map(ma => {
+    const f = FARBEN[ma.farbe_idx || 0]
+    const ini = ((ma.vorname?ma.vorname[0]:'') + (ma.nachname?ma.nachname[0]:'')).toUpperCase() || '?'
+    return `<div class="card" onclick="openMaModal('${ma.id}')">
+      <div class="card-top">
+        <div class="av" style="background:${f.bg};color:${f.txt};width:36px;height:36px;font-size:12px">${ini}</div>
+        <div>
+          <div class="card-name">${ma.vorname?ma.vorname+' ':''}${ma.nachname}</div>
+          <div class="card-sub">
+            <span class="pill" style="background:${ma.sprache==='pl'?'#E1F5EE':'#E6F1FB'};color:${ma.sprache==='pl'?'#085041':'#0C447C'}">${SPR_NAMEN[ma.sprache]||ma.sprache}</span>
+          </div>
+        </div>
+      </div>
+      <div class="detail-grid">
+        <div class="detail-box"><div class="dl">Stundenlohn</div><div class="dv">${ma.stundenlohn?ma.stundenlohn.toFixed(2)+' €/h':'—'}</div></div>
+        <div class="detail-box"><div class="dl">Soll-Stunden/Wo</div><div class="dv">${ma.wochenstunden?ma.wochenstunden+'h':'—'}</div></div>
+        <div class="detail-box"><div class="dl">Telefon</div><div class="dv" style="font-size:11px">${ma.telefon||'—'}</div></div>
+        <div class="detail-box"><div class="dl">Farbe</div><div class="dv"><span style="width:12px;height:12px;border-radius:50%;background:${f.bg};border:0.5px solid ${f.txt};display:inline-block;vertical-align:-1px;margin-right:4px"></span>${['Blau','Grün','Lachs','Gelb','Lila','Rosa','Grau'][ma.farbe_idx||0]}</div></div>
+      </div>
+    </div>`
+  }).join('')
+}
+
+// ── OBJEKTE VIEW ──────────────────────────────────────────────
+function renderObjGrid() {
+  if(!objekte.length) {
+    document.getElementById('obj-grid').innerHTML = '<div style="color:var(--text2);font-size:13px;padding:20px">Noch keine Objekte angelegt.</div>'
+    return
+  }
+  document.getElementById('obj-grid').innerHTML = objekte.map(o => {
+    const stdsatz = o.monatsstunden ? (o.monatspreis/o.monatsstunden).toFixed(2) : null
+    return `<div class="card" onclick="openObjModal('${o.id}')">
+      <div class="card-top">
+        <div class="av" style="background:var(--bg3);color:var(--text2);width:36px;height:36px;font-size:12px">
+          <i class="ti ti-building" style="font-size:16px"></i>
+        </div>
+        <div>
+          <div class="card-name">${o.name}</div>
+          <div class="card-sub">${o.adresse||'Keine Adresse'}</div>
+        </div>
+      </div>
+      <div class="detail-grid">
+        <div class="detail-box"><div class="dl">Monatspauschale</div><div class="dv" style="color:var(--green)">${o.monatspreis?fmtEur(o.monatspreis):'—'}</div></div>
+        <div class="detail-box"><div class="dl">Stundensatz</div><div class="dv">${stdsatz?stdsatz+'€/h':'—'}</div></div>
+        <div class="detail-box"><div class="dl">Soll-Stunden/Mo</div><div class="dv">${o.monatsstunden?o.monatsstunden+'h':'—'}</div></div>
+        <div class="detail-box"><div class="dl">Ansprechpartner</div><div class="dv" style="font-size:11px">${o.ansprechpartner||'—'}</div></div>
+      </div>
+    </div>`
+  }).join('')
+}
+
+// ── MODALS ────────────────────────────────────────────────────
+function closeModal(id) { document.getElementById(id).classList.remove('open') }
+
+function openAuftragModal(auftragId, maId, datum) {
+  editAuftragId = auftragId
+  document.getElementById('auftrag-modal-title').textContent = auftragId ? 'Auftrag bearbeiten' : 'Neuer Auftrag'
+  document.getElementById('am-del').style.display = auftragId ? 'block' : 'none'
+  document.getElementById('am-ma').innerHTML = mitarbeiter.map(m=>
+    `<option value="${m.id}">${m.nachname}${m.vorname?' '+m.vorname:''}</option>`).join('')
+  document.getElementById('am-obj').innerHTML = objekte.map(o=>
+    `<option value="${o.id}">${o.name}</option>`).join('')
+
+  if(auftragId) {
+    const a = auftraege.find(x=>x.id===auftragId)
+    if(a) {
+      document.getElementById('am-ma').value = a.mitarbeiter_id
+      document.getElementById('am-obj').value = a.objekt_id
+      document.getElementById('am-datum').value = a.datum
+      document.getElementById('am-start').value = a.soll_start||''
+      document.getElementById('am-end').value = a.soll_ende||''
+      document.getElementById('am-aufg').value = a.anmerkung||''
+      document.getElementById('am-anm').value = ''
+    }
+  } else {
+    if(maId) document.getElementById('am-ma').value = maId
+    document.getElementById('am-datum').value = datum || toISO(new Date())
+    document.getElementById('am-start').value = '07:00'
+    document.getElementById('am-end').value = '09:00'
+    document.getElementById('am-aufg').value = ''
+    document.getElementById('am-anm').value = ''
+  }
+  updateKalk()
+  document.getElementById('am-obj').oninput = updateKalk
+  document.getElementById('am-start').oninput = updateKalk
+  document.getElementById('am-end').oninput = updateKalk
+  document.getElementById('auftrag-modal').classList.add('open')
+}
+
+function updateKalk() {
+  const objId = document.getElementById('am-obj').value
+  const s = document.getElementById('am-start').value
+  const e = document.getElementById('am-end').value
+  const o = objekte.find(x=>x.id===objId) || {}
+  const h = calcH(s,e)
+  const stdsatz = o.monatsstunden ? o.monatspreis/o.monatsstunden : 0
+  const umsatz = stdsatz * h
+  const ma = mitarbeiter.find(m=>m.id===document.getElementById('am-ma').value) || {}
+  const lohn = h * (ma.stundenlohn||14)
+  const marge = umsatz > 0 ? Math.round((umsatz-lohn)/umsatz*100) : 0
+  if(!o.monatspreis) {
+    document.getElementById('am-kalk-inhalt').innerHTML = '<span style="font-size:11px;color:var(--text2)">Kein Pauschalpreis für dieses Objekt hinterlegt.</span>'
+    return
+  }
+  document.getElementById('am-kalk-inhalt').innerHTML = `
+    <div class="kalk-row"><span>Monatspauschal</span><span>${fmtEur(o.monatspreis)}</span></div>
+    <div class="kalk-row"><span>Stundensatz (errechnet)</span><span>${stdsatz.toFixed(2)}€/h</span></div>
+    <div class="kalk-row"><span>Dauer</span><span>${h.toFixed(2)}h</span></div>
+    <div class="kalk-row total"><span>Umsatz Einsatz</span><span style="color:var(--green)">${fmtEur(umsatz)}</span></div>
+    <div class="kalk-row"><span>Lohnkosten</span><span style="color:var(--red)">-${fmtEur(lohn)}</span></div>
+    <div class="kalk-row total"><span>Rohertrag</span><span style="color:${marge>40?'var(--green)':marge>20?'var(--amber)':'var(--red)'}">${marge}%</span></div>
+  `
+}
+
+async function saveAuftrag() {
+  const data = {
+    mitarbeiter_id: document.getElementById('am-ma').value,
+    objekt_id: document.getElementById('am-obj').value,
+    datum: document.getElementById('am-datum').value,
+    soll_start: document.getElementById('am-start').value || null,
+    soll_ende: document.getElementById('am-end').value || null,
+    anmerkung: document.getElementById('am-aufg').value || null,
+    status: 'geplant'
+  }
+  try {
+    if(editAuftragId) await sbPatch('auftraege', editAuftragId, data)
+    else await sbPost('auftraege', data)
+    closeModal('auftrag-modal')
+    await loadWoche()
+  } catch(e) { alert('Fehler: ' + e.message) }
+}
+
+async function deleteAuftrag() {
+  if(!editAuftragId || !confirm('Auftrag wirklich löschen?')) return
+  try {
+    await sbDelete('auftraege', editAuftragId)
+    closeModal('auftrag-modal')
+    await loadWoche()
+  } catch(e) { alert('Fehler: ' + e.message) }
+}
+
+function openMaModal(maId) {
+  editMaId = maId
+  document.getElementById('ma-modal-title').textContent = maId ? 'Mitarbeiter bearbeiten' : 'Neuer Mitarbeiter'
+  document.getElementById('mm-del').style.display = maId ? 'block' : 'none'
+  if(maId) {
+    const m = mitarbeiter.find(x=>x.id===maId)
+    if(m) {
+      document.getElementById('mm-nach').value = m.nachname||''
+      document.getElementById('mm-vor').value = m.vorname||''
+      document.getElementById('mm-tel').value = m.telefon||''
+      document.getElementById('mm-mail').value = m.email||''
+      document.getElementById('mm-lohn').value = m.stundenlohn||''
+      document.getElementById('mm-std').value = m.wochenstunden||''
+      document.getElementById('mm-spr').value = m.sprache||'de'
+      document.getElementById('mm-farbe').value = m.farbe_idx||0
+    }
+  } else {
+    ['mm-nach','mm-vor','mm-tel','mm-mail','mm-lohn','mm-std'].forEach(id=>document.getElementById(id).value='')
+    document.getElementById('mm-spr').value = 'de'
+    document.getElementById('mm-farbe').value = '0'
+  }
+  document.getElementById('ma-modal').classList.add('open')
+}
+
+async function saveMa() {
+  const nach = document.getElementById('mm-nach').value.trim()
+  if(!nach) { document.getElementById('mm-nach').focus(); return }
+  const data = {
+    nachname: nach,
+    vorname: document.getElementById('mm-vor').value.trim() || null,
+    telefon: document.getElementById('mm-tel').value.trim() || null,
+    email: document.getElementById('mm-mail').value.trim() || null,
+    stundenlohn: parseFloat(document.getElementById('mm-lohn').value) || null,
+    wochenstunden: parseInt(document.getElementById('mm-std').value) || null,
+    sprache: document.getElementById('mm-spr').value,
+    farbe_idx: parseInt(document.getElementById('mm-farbe').value),
+    aktiv: true
+  }
+  try {
+    if(editMaId) await sbPatch('mitarbeiter', editMaId, data)
+    else await sbPost('mitarbeiter', data)
+    closeModal('ma-modal')
+    mitarbeiter = await sbGet('mitarbeiter', 'aktiv=eq.true&order=nachname')
+    renderMaGrid()
+    renderKPI()
+  } catch(e) { alert('Fehler: ' + e.message) }
+}
+
+async function deleteMa() {
+  if(!editMaId || !confirm('Mitarbeiter wirklich deaktivieren?')) return
+  try {
+    await sbPatch('mitarbeiter', editMaId, {aktiv: false})
+    closeModal('ma-modal')
+    mitarbeiter = await sbGet('mitarbeiter', 'aktiv=eq.true&order=nachname')
+    renderMaGrid()
+    await loadWoche()
+  } catch(e) { alert('Fehler: ' + e.message) }
+}
+
+function openObjModal(objId) {
+  editObjId = objId
+  document.getElementById('obj-modal-title').textContent = objId ? 'Objekt bearbeiten' : 'Neues Objekt'
+  document.getElementById('om-del').style.display = objId ? 'block' : 'none'
+  if(objId) {
+    const o = objekte.find(x=>x.id===objId)
+    if(o) {
+      document.getElementById('om-name').value = o.name||''
+      document.getElementById('om-adresse').value = o.adresse||''
+      document.getElementById('om-ap').value = o.ansprechpartner||''
+      document.getElementById('om-tel').value = o.telefon||''
+      document.getElementById('om-preis').value = o.monatspreis||''
+      document.getElementById('om-std').value = o.monatsstunden||''
+      document.getElementById('om-leistung').value = o.leistungsbeschreibung||''
+    }
+  } else {
+    ['om-name','om-adresse','om-ap','om-tel','om-preis','om-std','om-leistung'].forEach(id=>document.getElementById(id).value='')
+  }
+  document.getElementById('obj-modal').classList.add('open')
+}
+
+async function saveObj() {
+  const name = document.getElementById('om-name').value.trim()
+  if(!name) { document.getElementById('om-name').focus(); return }
+  const data = {
+    name,
+    adresse: document.getElementById('om-adresse').value.trim() || null,
+    ansprechpartner: document.getElementById('om-ap').value.trim() || null,
+    telefon: document.getElementById('om-tel').value.trim() || null,
+    monatspreis: parseFloat(document.getElementById('om-preis').value) || null,
+    monatsstunden: parseInt(document.getElementById('om-std').value) || null,
+    leistungsbeschreibung: document.getElementById('om-leistung').value.trim() || null,
+    aktiv: true
+  }
+  try {
+    if(editObjId) await sbPatch('objekte', editObjId, data)
+    else await sbPost('objekte', data)
+    closeModal('obj-modal')
+    objekte = await sbGet('objekte', 'aktiv=eq.true&order=name')
+    renderObjGrid()
+    renderKPI()
+  } catch(e) { alert('Fehler: ' + e.message) }
+}
+
+async function deleteObj() {
+  if(!editObjId || !confirm('Objekt wirklich deaktivieren?')) return
+  try {
+    await sbPatch('objekte', editObjId, {aktiv: false})
+    closeModal('obj-modal')
+    objekte = await sbGet('objekte', 'aktiv=eq.true&order=name')
+    renderObjGrid()
+  } catch(e) { alert('Fehler: ' + e.message) }
+}
+
+// ── NAVIGATION ────────────────────────────────────────────────
+function setView(v) {
+  curView = v
+  document.getElementById('view-dispoplan').style.display = v==='dispoplan' ? 'block' : 'none'
+  document.getElementById('view-mitarbeiter').style.display = v==='mitarbeiter' ? 'block' : 'none'
+  document.getElementById('view-objekte').style.display = v==='objekte' ? 'block' : 'none'
+  document.querySelectorAll('.nav-tab').forEach((t,i) => {
+    t.className = 'nav-tab' + (['dispoplan','mitarbeiter','objekte'][i]===v?' active':'')
+  })
+}
+
+function setGridView(v) {
+  curGridView = v
+  document.querySelectorAll('.vt-btn').forEach((b,i)=>{
+    b.className = 'vt-btn' + (['woche','tag'][i]===v?' active':'')
+  })
+}
+
+// Modals schließen bei Klick außen
+document.querySelectorAll('.modal-bg').forEach(bg => {
+  bg.addEventListener('click', e => { if(e.target===bg) bg.classList.remove('open') })
+})
+
+init()
+</script>
+</body>
+</html>
