@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#ffffff">
+  <title>RJCD – Meine Aufträge</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#f5f5f4;--bg2:#ffffff;--bg3:#e8e6e1;
+      --text:#1a1a18;--text2:#5a5a56;--text3:#9a9a94;
+      --border:rgba(0,0,0,0.10);--border2:rgba(0,0,0,0.18);
+      --green:#1D9E75;--green-bg:#E1F5EE;--green-text:#085041;
+      --amber:#BA7517;--amber-bg:#FAEEDA;--amber-text:#633806;
+      --red:#A32D2D;--red-bg:#FCEBEB;--red-text:#791F1F;
+      --blue:#185FA5;--blue-bg:#E6F1FB;--blue-text:#0C447C;
+      --radius:10px;--radius-lg:14px;
+      --font:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    }
+    @media(prefers-color-scheme:dark){:root{
+      --bg:#1c1c1a;--bg2:#252523;--bg3:#2e2e2b;
+      --text:#e8e6e0;--text2:#a8a8a0;--text3:#686864;
+      --border:rgba(255,255,255,0.10);--border2:rgba(255,255,255,0.18);
+    }}
+    html,body{height:100%;background:var(--bg);font-family:var(--font);color:var(--text)}
+
+    /* LOGIN */
+    .login{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px}
+    .login-logo{font-size:26px;font-weight:500;margin-bottom:6px}
+    .login-sub{font-size:14px;color:var(--text2);margin-bottom:32px}
+    .login-card{background:var(--bg2);border-radius:var(--radius-lg);border:0.5px solid var(--border2);padding:24px;width:100%;max-width:340px}
+    .login-card h2{font-size:16px;font-weight:500;margin-bottom:20px}
+    .flbl{font-size:12px;color:var(--text2);display:block;margin-bottom:4px;margin-top:14px}
+    .finp{width:100%;font-size:15px;padding:11px 12px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text)}
+    .btn-login{width:100%;background:var(--text);color:var(--bg2);border:none;border-radius:var(--radius);padding:13px;font-size:15px;font-weight:500;cursor:pointer;margin-top:20px;display:flex;align-items:center;justify-content:center;gap:8px}
+    .btn-login:active{opacity:.85}
+    .login-hint{font-size:11px;color:var(--text3);text-align:center;margin-top:10px}
+    .err-box{background:var(--red-bg);border:0.5px solid var(--red);border-radius:var(--radius);padding:10px 12px;font-size:13px;color:var(--red-text);margin-top:12px;display:none}
+
+    /* APP */
+    .app{display:none;flex-direction:column;min-height:100vh}
+    .app.show{display:flex}
+    .topbar{background:var(--bg2);border-bottom:0.5px solid var(--border2);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+    .tb-name{font-size:15px;font-weight:500}
+    .tb-date{font-size:12px;color:var(--text2)}
+    .lang-toggle{display:flex;gap:3px}
+    .lang-btn{font-size:11px;font-weight:500;padding:4px 9px;border-radius:20px;border:0.5px solid var(--border2);background:none;cursor:pointer;color:var(--text2)}
+    .lang-btn.on{background:var(--text);color:var(--bg2);border-color:var(--text)}
+    .logout-btn{background:none;border:none;cursor:pointer;color:var(--text3);font-size:20px;padding:4px;margin-left:8px}
+    .main{flex:1;padding:16px;overflow-y:auto;padding-bottom:40px}
+
+    /* LOADING */
+    .loading{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 24px;gap:12px;color:var(--text2)}
+    .spinner{width:28px;height:28px;border:2.5px solid var(--border2);border-top-color:var(--text);border-radius:50%;animation:spin .7s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* NEBENZEIT BANNER */
+    .nz-banner{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;gap:12px}
+    .nz-icon{width:36px;height:36px;border-radius:var(--radius);background:var(--green-bg);display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--green);flex-shrink:0}
+    .nz-t{font-size:13px;font-weight:500;margin-bottom:2px}
+    .nz-s{font-size:11px;color:var(--text2)}
+    .nz-pill{font-size:13px;font-weight:500;padding:5px 12px;border-radius:20px;background:var(--green-bg);color:var(--green-text);white-space:nowrap;margin-left:auto}
+
+    /* AUFTRAG KARTE */
+    .a-list{display:flex;flex-direction:column;gap:14px}
+    .a-card{background:var(--bg2);border-radius:var(--radius-lg);border:0.5px solid var(--border);overflow:hidden}
+    .a-card.aktiv{border:1.5px solid var(--blue)}
+    .a-card.fertig{border:1px solid var(--green)}
+    .a-head{padding:14px 16px 10px}
+    .a-obj{font-size:17px;font-weight:500;margin-bottom:4px}
+    .a-adr{font-size:12px;color:var(--text2);margin-bottom:6px}
+    .a-meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .pill{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:500;padding:3px 10px;border-radius:20px}
+    .pill.soll{background:var(--blue-bg);color:var(--blue-text)}
+    .pill.geplant{background:var(--bg3);color:var(--text2)}
+    .pill.aktiv{background:var(--blue-bg);color:var(--blue-text)}
+    .pill.fertig{background:var(--green-bg);color:var(--green-text)}
+
+    /* AUFGABEN */
+    .a-aufg{padding:0 16px 10px}
+    .a-aufg-hdr{font-size:11px;font-weight:500;color:var(--text2);margin-bottom:6px;display:flex;justify-content:space-between}
+    .prog{height:4px;background:var(--bg3);border-radius:2px;margin-bottom:8px}
+    .prog-fill{height:4px;background:var(--green);border-radius:2px;transition:width .3s}
+    .aufg-item{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:var(--radius);border:0.5px solid var(--border);margin-bottom:6px;cursor:pointer;background:var(--bg);transition:background .12s}
+    .aufg-item:active{background:var(--bg3)}
+    .aufg-item.done{background:var(--green-bg);border-color:rgba(29,158,117,0.25)}
+    .chk{width:22px;height:22px;border-radius:6px;border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+    .aufg-item.done .chk{background:var(--green);border-color:var(--green);color:#fff}
+    .aufg-txt{font-size:14px;flex:1}
+    .aufg-item.done .aufg-txt{color:var(--text2);text-decoration:line-through}
+
+    /* ZEITEN */
+    .a-zeiten{padding:0 16px 10px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .z-box{background:var(--bg3);border-radius:var(--radius);padding:10px 12px}
+    .z-lbl{font-size:10px;color:var(--text2);margin-bottom:3px}
+    .z-val{font-size:16px;font-weight:500}
+    .z-val.leer{font-size:13px;font-weight:400;color:var(--text3)}
+
+    /* ABWEICHUNG */
+    .abw{margin:0 16px 12px;background:var(--amber-bg);border:0.5px solid #fde047;border-radius:var(--radius);padding:12px 14px}
+    .abw-hdr{font-size:13px;font-weight:500;color:var(--amber-text);margin-bottom:4px;display:flex;align-items:center;gap:6px}
+    .abw-diff{font-size:13px;color:var(--amber-text);margin-bottom:8px}
+    .abw-lbl{font-size:12px;color:var(--amber-text);margin-bottom:6px}
+    .abw textarea{width:100%;font-size:13px;padding:10px;border:0.5px solid #fde047;border-radius:8px;background:rgba(255,255,255,0.6);color:var(--amber-text);min-height:68px;resize:none;font-family:var(--font)}
+    .abw textarea::placeholder{color:rgba(99,56,6,0.45)}
+    .abw textarea.err{border-color:var(--red)}
+
+    /* FAHRT */
+    .fahrt{padding:0 16px 12px}
+    .fahrt-tit{font-size:13px;font-weight:500;margin-bottom:8px}
+    .fahrt-opts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .f-opt{padding:14px 10px;border-radius:var(--radius);border:0.5px solid var(--border2);background:var(--bg);cursor:pointer;text-align:center;transition:all .15s}
+    .f-opt:active{background:var(--bg3)}
+    .f-opt.on{background:var(--blue-bg);border-color:var(--blue)}
+    .f-opt i{font-size:24px;color:var(--text2);display:block;margin-bottom:5px}
+    .f-opt.on i{color:var(--blue)}
+    .f-opt span{font-size:13px;color:var(--text2)}
+    .f-opt.on span{color:var(--blue-text);font-weight:500}
+
+    /* BUTTON */
+    .a-btn{padding:0 16px 16px}
+    .mbtn{width:100%;padding:14px;border-radius:var(--radius);border:none;font-size:15px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity .15s}
+    .mbtn:active{opacity:.82}
+    .mbtn:disabled{opacity:.45;cursor:not-allowed}
+    .mbtn.blue{background:var(--blue);color:#fff}
+    .mbtn.green{background:var(--green);color:#fff}
+    .mbtn.gray{background:var(--bg3);color:var(--text2)}
+
+    /* SPEICHERN FEEDBACK */
+    .saving{display:flex;align-items:center;justify-content:center;gap:8px;font-size:13px;color:var(--text2);padding:8px}
+
+    /* FERTIG */
+    .fertig-card{background:var(--green-bg);border:0.5px solid rgba(29,158,117,0.3);border-radius:var(--radius-lg);padding:28px 20px;text-align:center;margin-top:8px}
+    .fertig-icon{font-size:48px;color:var(--green);margin-bottom:12px}
+    .fertig-tit{font-size:18px;font-weight:500;color:var(--green-text);margin-bottom:6px}
+    .fertig-sub{font-size:14px;color:var(--green-text);opacity:.75}
+
+    .leer{text-align:center;padding:56px 24px;color:var(--text2)}
+    .leer i{font-size:44px;opacity:.3;display:block;margin-bottom:14px}
+    .leer p{font-size:14px}
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login" class="login">
+  <div class="login-logo">RJCD</div>
+  <div class="login-sub">Gebäudereinigung</div>
+  <div class="login-card">
+    <h2 id="l-h">Anmelden</h2>
+    <label class="flbl" id="l-ma-lbl">Mitarbeiter</label>
+    <select id="l-ma" class="finp">
+      <option value="">— Bitte wählen —</option>
+    </select>
+    <label class="flbl" id="l-pin-lbl">PIN</label>
+    <input type="password" id="l-pin" class="finp" placeholder="••••" maxlength="4" inputmode="numeric" pattern="[0-9]*">
+    <button class="btn-login" id="l-btn" onclick="login()">
+      <span id="l-btn-txt">Anmelden</span>
+    </button>
+    <div class="login-hint" id="l-hint">PIN: Ihr persönlicher 4-stelliger Code</div>
+    <div class="err-box" id="l-err"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" class="app">
+  <div class="topbar">
+    <div>
+      <div class="tb-name" id="tb-name"></div>
+      <div class="tb-date" id="tb-date"></div>
+    </div>
+    <div style="display:flex;align-items:center">
+      <div class="lang-toggle">
+        <button class="lang-btn on" id="lb-de" onclick="setLang('de')">DE</button>
+        <button class="lang-btn" id="lb-pl" onclick="setLang('pl')">PL</button>
+      </div>
+      <button class="logout-btn" onclick="logout()"><i class="ti ti-logout" aria-hidden="true"></i></button>
+    </div>
+  </div>
+  <div class="main" id="main"></div>
+</div>
+
+<script>
+// ── SUPABASE ──────────────────────────────────────────────────
+const SB_URL = 'https://grxpfsrctfhtamwrqooz.supabase.co'
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdyeHBmc3JjdGZodGFtd3Jxb296Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5MjExMTUsImV4cCI6MjA5NTQ5NzExNX0.gNADsG6yxVv8T3_Vni7DrOrLoMBQbu57zhy5f8pALbI'
+const HDR = {'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}
+
+async function sbGet(table, params='') {
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?${params}`, {headers:HDR})
+  if(!r.ok) throw new Error(await r.text())
+  return r.json()
+}
+async function sbPost(table, data) {
+  const r = await fetch(`${SB_URL}/rest/v1/${table}`, {
+    method:'POST', headers:{...HDR,'Prefer':'return=representation'}, body:JSON.stringify(data)
+  })
+  if(!r.ok) throw new Error(await r.text())
+  return r.json()
+}
+async function sbPatch(table, id, data) {
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?id=eq.${id}`, {
+    method:'PATCH', headers:{...HDR,'Prefer':'return=representation'}, body:JSON.stringify(data)
+  })
+  if(!r.ok) throw new Error(await r.text())
+  return r.json()
+}
+
+// ── ÜBERSETZUNGEN ─────────────────────────────────────────────
+const TX = {
+  de:{
+    auftraege:'Meine Aufträge heute',
+    geplant:'Geplant',aktiv:'Im Einsatz',fertig:'Abgeschlossen',
+    aufgaben:'Aufgaben',erledigt:'erledigt',
+    istBeginn:'Ist-Beginn',istEnde:'Ist-Ende',
+    btnAnkunft:'Ankunft bestätigen',
+    btnEnde:'Arbeitsende bestätigen',
+    btnAbw:'Abweichung speichern & abschließen',
+    btnWeiter:'Abschließen & weiter',
+    btnFahrt:'Fahrt bestätigen',
+    abwTit:'Abweichung von Sollzeit',
+    abwLbl:'Bitte Begründung eingeben:',
+    abwPh:'z.B. Zusatzarbeiten angefordert, Objekt stärker verschmutzt ...',
+    fahrtTit:'Wohin fahren Sie jetzt?',
+    fahrtHeim:'Nach Hause',fahrtNext:'Nächstes Objekt',
+    tagFertigTit:'Tag abgeschlossen',
+    tagFertigSub:'Alle Aufträge erledigt. Gute Arbeit!',
+    nzTit:'Nebenzeiten diese Woche',
+    nzSub:'Lappen waschen · Material · Fahrzeugpflege',
+    kein:'Heute keine Aufträge geplant.',
+    laden:'Aufträge werden geladen...',
+    speichern:'Wird gespeichert...',
+    pflicht:'Bitte Begründung eingeben',
+    zielPflicht:'Bitte Fahrziel wählen',
+    fehler:'Verbindungsfehler — bitte neu laden',
+  },
+  pl:{
+    auftraege:'Moje zlecenia na dziś',
+    geplant:'Zaplanowane',aktiv:'W pracy',fertig:'Zakończone',
+    aufgaben:'Zadania',erledigt:'ukończone',
+    istBeginn:'Rzeczywisty początek',istEnde:'Rzeczywisty koniec',
+    btnAnkunft:'Potwierdź przybycie',
+    btnEnde:'Potwierdź koniec pracy',
+    btnAbw:'Zapisz odchylenie i zakończ',
+    btnWeiter:'Zakończ i kontynuuj',
+    btnFahrt:'Potwierdź przejazd',
+    abwTit:'Odchylenie od czasu planowanego',
+    abwLbl:'Proszę podać uzasadnienie:',
+    abwPh:'np. dodatkowe prace zlecone, obiekt bardziej zabrudzony ...',
+    fahrtTit:'Dokąd teraz jedziesz?',
+    fahrtHeim:'Do domu',fahrtNext:'Następny obiekt',
+    tagFertigTit:'Dzień zakończony',
+    tagFertigSub:'Wszystkie zlecenia wykonane. Dobra robota!',
+    nzTit:'Czasy dodatkowe w tym tygodniu',
+    nzSub:'Pranie ścierek · Materiały · Pielęgnacja pojazdu',
+    kein:'Brak zaplanowanych zleceń na dziś.',
+    laden:'Ładowanie zleceń...',
+    speichern:'Zapisywanie...',
+    pflicht:'Proszę podać uzasadnienie',
+    zielPflicht:'Proszę wybrać cel podróży',
+    fehler:'Błąd połączenia — proszę odświeżyć',
+  }
+}
+
+// ── STATE ─────────────────────────────────────────────────────
+let lang='de', curMa=null, tagFertig=false
+let auftraege=[], zeitIds={}, aufgabenChecked={}, auftragStep={}
+let nebenzeit=65 // Minuten/Woche — wird aus Supabase geladen
+
+function t(k){return TX[lang][k]||TX.de[k]||k}
+function now(){return new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})}
+function toMin(s){if(!s)return 0;const[h,m]=s.split(':').map(Number);return h*60+m}
+function abwMin(se,ie){if(!se||!ie)return null;return toMin(ie)-toMin(se)}
+function toISO(d){return d.toISOString().split('T')[0]}
+
+// ── INIT: Mitarbeiter laden ───────────────────────────────────
+async function initLogin() {
+  try {
+    const mas = await sbGet('mitarbeiter','aktiv=eq.true&order=nachname&select=id,nachname,vorname,sprache')
+    const sel = document.getElementById('l-ma')
+    mas.forEach(m => {
+      const opt = document.createElement('option')
+      opt.value = m.id
+      opt.textContent = m.nachname + (m.vorname ? ', '+m.vorname : '')
+      opt.dataset.spr = m.sprache || 'de'
+      sel.appendChild(opt)
+    })
+  } catch(e) {
+    // Fallback: Demo-Mitarbeiter falls keine Verbindung
+    document.getElementById('l-hint').textContent = 'Demo-PIN: 1234'
+  }
+}
+
+// ── LOGIN ─────────────────────────────────────────────────────
+async function login() {
+  const maId  = document.getElementById('l-ma').value
+  const pin   = document.getElementById('l-pin').value
+  const errEl = document.getElementById('l-err')
+  errEl.style.display = 'none'
+
+  if(!maId) { showErr('Bitte Mitarbeiter wählen'); return }
+  if(!pin || pin.length < 4) { showErr('Bitte PIN eingeben'); return }
+
+  // PIN-Prüfung: in Supabase mitarbeiter-Tabelle pin-Feld prüfen
+  // Demo: PIN 1234 für alle — echte PINs werden im nächsten Schritt eingerichtet
+  if(pin !== '1234') { showErr(lang==='pl'?'Nieprawidłowy PIN':'Falscher PIN'); return }
+
+  const sel = document.getElementById('l-ma')
+  const opt = sel.options[sel.selectedIndex]
+  curMa = {id: maId, name: opt.textContent, spr: opt.dataset.spr || 'de'}
+
+  setLang(curMa.spr)
+  document.getElementById('login').style.display = 'none'
+  document.getElementById('app').classList.add('show')
+  document.getElementById('tb-name').textContent = curMa.name
+  document.getElementById('tb-date').textContent =
+    new Date().toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'})
+
+  await ladeAuftraege()
+}
+
+function showErr(msg) {
+  const el = document.getElementById('l-err')
+  el.textContent = msg
+  el.style.display = 'block'
+}
+
+function logout() {
+  curMa = null; tagFertig = false
+  auftraege = []; zeitIds = {}; aufgabenChecked = {}; auftragStep = {}
+  document.getElementById('login').style.display = 'flex'
+  document.getElementById('app').classList.remove('show')
+  document.getElementById('l-ma').value = ''
+  document.getElementById('l-pin').value = ''
+  document.getElementById('l-err').style.display = 'none'
+}
+
+// ── AUFTRÄGE LADEN ────────────────────────────────────────────
+async function ladeAuftraege() {
+  document.getElementById('main').innerHTML =
+    `<div class="loading"><div class="spinner"></div><span>${t('laden')}</span></div>`
+
+  try {
+    const heute = toISO(new Date())
+    // Aufträge für diesen MA heute
+    const data = await sbGet('auftraege',
+      `mitarbeiter_id=eq.${curMa.id}&datum=eq.${heute}&order=soll_start&select=id,datum,soll_start,soll_ende,anmerkung,status,objekt_id`)
+
+    // Objekte dazu laden
+    const objIds = [...new Set(data.map(a=>a.objekt_id))].join(',')
+    let objMap = {}
+    if(objIds) {
+      const objs = await sbGet('objekte', `id=in.(${objIds})&select=id,name,adresse,leistungsbeschreibung`)
+      objs.forEach(o => objMap[o.id] = o)
+    }
+
+    // Bestehende Zeiterfassungen laden
+    const aIds = data.map(a=>a.id).join(',')
+    let zeitMap = {}
+    if(aIds) {
+      const zeiten = await sbGet('zeiterfassung', `auftrag_id=in.(${aIds})&select=id,auftrag_id,ist_start,ist_ende,abweichung_minuten,abweichung_begruendung,fahrt_ziel`)
+      zeiten.forEach(z => zeitMap[z.auftrag_id] = z)
+    }
+
+    // Aufgaben laden
+    let aufgMap = {}
+    if(aIds) {
+      const aufg = await sbGet('aufgaben', `auftrag_id=in.(${aIds})&order=reihenfolge&select=id,auftrag_id,beschreibung,erledigt`)
+      aufg.forEach(a => {
+        if(!aufgMap[a.auftrag_id]) aufgMap[a.auftrag_id] = []
+        aufgMap[a.auftrag_id].push(a)
+      })
+    }
+
+    // Nebenzeiten laden
+    try {
+      const nz = await sbGet('v_nebenzeiten_pro_ma', `mitarbeiter_id=eq.${curMa.id}&select=nebenzeit_min_pro_woche`)
+      if(nz.length) nebenzeit = nz[0].nebenzeit_min_pro_woche || 65
+    } catch(e) { nebenzeit = 65 }
+
+    // State aufbauen
+    auftraege = data.map(a => ({
+      ...a,
+      objekt: objMap[a.objekt_id] || {name:'Unbekannt',adresse:''},
+      aufgaben: aufgMap[a.id] || [],
+      zeit: zeitMap[a.id] || null,
+    }))
+
+    // Bestehende Steps wiederherstellen
+    auftraege.forEach((a,i) => {
+      const z = a.zeit
+      if(!z) {
+        auftragStep[i] = 0
+        aufgabenChecked[i] = []
+      } else if(!z.ist_ende) {
+        auftragStep[i] = 1
+        aufgabenChecked[i] = a.aufgaben.filter(ag=>ag.erledigt).map((_,ai)=>ai)
+      } else if(!z.fahrt_ziel) {
+        auftragStep[i] = 3
+        aufgabenChecked[i] = a.aufgaben.map((_,ai)=>ai)
+      } else {
+        auftragStep[i] = 4
+        aufgabenChecked[i] = a.aufgaben.map((_,ai)=>ai)
+      }
+      if(z) zeitIds[i] = z.id
+    })
+
+    tagFertig = auftraege.length > 0 && auftraege.every((_,i) => auftragStep[i] >= 4)
+    render()
+
+  } catch(e) {
+    document.getElementById('main').innerHTML =
+      `<div class="leer"><i class="ti ti-wifi-off" aria-hidden="true"></i><p>${t('fehler')}</p><p style="font-size:12px;margin-top:8px;opacity:.6">${e.message}</p></div>`
+  }
+}
+
+// ── RENDER ────────────────────────────────────────────────────
+function render() {
+  const el = document.getElementById('main')
+  const nzH = Math.floor(nebenzeit/60), nzM = nebenzeit%60
+  const nzBanner = `<div class="nz-banner">
+    <div class="nz-icon"><i class="ti ti-clock-plus" aria-hidden="true"></i></div>
+    <div><div class="nz-t">${t('nzTit')}</div><div class="nz-s">${t('nzSub')}</div></div>
+    <div class="nz-pill">+${nzH>0?nzH+'h ':''}${nzM}min</div>
+  </div>`
+
+  if(tagFertig) {
+    el.innerHTML = `
+      <div class="fertig-card">
+        <div class="fertig-icon"><i class="ti ti-circle-check" aria-hidden="true"></i></div>
+        <div class="fertig-tit">${t('tagFertigTit')}</div>
+        <div class="fertig-sub">${t('tagFertigSub')}</div>
+      </div>${nzBanner}`
+    return
+  }
+
+  if(!auftraege.length) {
+    el.innerHTML = `${nzBanner}<div class="leer"><i class="ti ti-calendar-off" aria-hidden="true"></i><p>${t('kein')}</p></div>`
+    return
+  }
+
+  let html = `<div style="font-size:17px;font-weight:500;margin-bottom:12px">${t('auftraege')}</div>${nzBanner}<div class="a-list">`
+
+  auftraege.forEach((a,i) => {
+    const step = auftragStep[i] || 0
+    const checked = aufgabenChecked[i] || []
+    const z = a.zeit
+    const istStart = z?.ist_start || ''
+    const istEnde  = z?.ist_ende  || ''
+    const abw = abwMin(a.soll_ende, istEnde)
+    const brauchtBegr = abw !== null && Math.abs(abw) > 5
+    const fahrt = z?.fahrt_ziel || ''
+
+    const cardCls = step===0?'':(step>=4?'fertig':'aktiv')
+    const statusCls = step===0?'geplant':step>=4?'fertig':'aktiv'
+    const statusTxt = step===0?t('geplant'):step>=4?t('fertig'):t('aktiv')
+
+    html += `<div class="a-card ${cardCls}">
+      <div class="a-head">
+        <div class="a-obj">${a.objekt.name}</div>
+        ${a.objekt.adresse?`<div class="a-adr"><i class="ti ti-map-pin" style="font-size:12px" aria-hidden="true"></i> ${a.objekt.adresse}</div>`:''}
+        <div class="a-meta">
+          <span class="pill soll"><i class="ti ti-clock" style="font-size:12px" aria-hidden="true"></i>${a.soll_start||''}${a.soll_ende?'–'+a.soll_ende:''}</span>
+          <span class="pill ${statusCls}">${statusTxt}</span>
+        </div>
+      </div>`
+
+    // Aufgaben
+    if(step >= 1 && a.aufgaben.length) {
+      const pct = Math.round(checked.length/a.aufgaben.length*100)
+      html += `<div class="a-aufg">
+        <div class="a-aufg-hdr"><span>${t('aufgaben')}</span><span>${checked.length}/${a.aufgaben.length} ${t('erledigt')}</span></div>
+        <div class="prog"><div class="prog-fill" style="width:${pct}%"></div></div>`
+      a.aufgaben.forEach((aufg,ai) => {
+        const done = checked.includes(ai)
+        html += `<div class="aufg-item ${done?'done':''}" onclick="toggleAufg(${i},${ai})">
+          <div class="chk">${done?'<i class="ti ti-check" style="font-size:12px" aria-hidden="true"></i>':''}</div>
+          <span class="aufg-txt">${aufg.beschreibung}</span>
+        </div>`
+      })
+      html += `</div>`
+    } else if(step >= 1 && !a.aufgaben.length && a.anmerkung) {
+      html += `<div class="a-aufg"><div style="font-size:13px;color:var(--text2);padding:4px 0">${a.anmerkung}</div></div>`
+    }
+
+    // Zeiten
+    if(step >= 1) {
+      html += `<div class="a-zeiten">
+        <div class="z-box"><div class="z-lbl">${t('istBeginn')}</div><div class="z-val ${istStart?'':'leer'}">${istStart||'—'}</div></div>
+        <div class="z-box"><div class="z-lbl">${t('istEnde')}</div><div class="z-val ${istEnde?'':'leer'}">${istEnde||'—'}</div></div>
+      </div>`
+    }
+
+    // Abweichung
+    if(step === 2 && brauchtBegr) {
+      html += `<div class="abw">
+        <div class="abw-hdr"><i class="ti ti-alert-triangle" aria-hidden="true"></i>${t('abwTit')}</div>
+        <div class="abw-diff">${abw>0?'+':''}${abw} min (Soll-Ende: ${a.soll_ende})</div>
+        <div class="abw-lbl">${t('abwLbl')}</div>
+        <textarea id="begr-${i}" placeholder="${t('abwPh')}">${z?.abweichung_begruendung||''}</textarea>
+      </div>`
+    }
+
+    // Fahrt
+    if(step === 3) {
+      html += `<div class="fahrt">
+        <div class="fahrt-tit">${t('fahrtTit')}</div>
+        <div class="fahrt-opts">
+          <div class="f-opt ${fahrt==='heim'?'on':''}" onclick="setFahrt(${i},'heim')">
+            <i class="ti ti-home" aria-hidden="true"></i><span>${t('fahrtHeim')}</span>
+          </div>
+          <div class="f-opt ${fahrt==='next'?'on':''}" onclick="setFahrt(${i},'next')">
+            <i class="ti ti-building" aria-hidden="true"></i><span>${t('fahrtNext')}</span>
+          </div>
+        </div>
+      </div>`
+    }
+
+    // Button
+    html += `<div class="a-btn" id="btn-area-${i}">`
+    if(step === 0) {
+      html += `<button class="mbtn blue" onclick="nextStep(${i})"><i class="ti ti-map-pin" aria-hidden="true"></i>${t('btnAnkunft')}</button>`
+    } else if(step === 1) {
+      html += `<button class="mbtn ${checked.length===a.aufgaben.length||!a.aufgaben.length?'green':'gray'}" onclick="nextStep(${i})"><i class="ti ti-clock-check" aria-hidden="true"></i>${t('btnEnde')}</button>`
+    } else if(step === 2) {
+      html += `<button class="mbtn green" onclick="nextStep(${i})"><i class="ti ti-device-floppy" aria-hidden="true"></i>${brauchtBegr?t('btnAbw'):t('btnWeiter')}</button>`
+    } else if(step === 3) {
+      html += `<button class="mbtn blue" onclick="nextStep(${i})"><i class="ti ti-navigation" aria-hidden="true"></i>${t('btnFahrt')}</button>`
+    } else {
+      html += `<button class="mbtn gray" disabled><i class="ti ti-circle-check" aria-hidden="true"></i>${t('fertig')}</button>`
+    }
+    html += `</div></div>` // a-btn + a-card
+  })
+
+  html += `</div>`
+  el.innerHTML = html
+}
+
+// ── AKTIONEN ─────────────────────────────────────────────────
+async function toggleAufg(ai, ti) {
+  const step = auftragStep[ai] || 0
+  if(step < 1) return
+  const checked = aufgabenChecked[ai] || []
+  const idx = checked.indexOf(ti)
+  if(idx >= 0) checked.splice(idx,1); else checked.push(ti)
+  aufgabenChecked[ai] = checked
+
+  // Aufgabe in Supabase als erledigt markieren
+  const aufg = auftraege[ai].aufgaben[ti]
+  if(aufg?.id) {
+    try {
+      await sbPatch('aufgaben', aufg.id, {erledigt: checked.includes(ti), erledigt_um: checked.includes(ti) ? new Date().toISOString() : null})
+    } catch(e) { console.warn('Aufgabe konnte nicht gespeichert werden', e) }
+  }
+  render()
+}
+
+function setFahrt(ai, ziel) {
+  if(!auftraege[ai].zeit) auftraege[ai].zeit = {}
+  auftraege[ai].zeit.fahrt_ziel = ziel
+  render()
+}
+
+async function nextStep(ai) {
+  const a    = auftraege[ai]
+  const step = auftragStep[ai] || 0
+  const abw  = abwMin(a.soll_ende, a.zeit?.ist_ende)
+  const brauchtBegr = abw !== null && Math.abs(abw) > 5
+  const btnArea = document.getElementById('btn-area-'+ai)
+
+  function setSaving() {
+    if(btnArea) btnArea.innerHTML = `<div class="saving"><div class="spinner" style="width:18px;height:18px"></div><span>${t('speichern')}</span></div>`
+  }
+
+  if(step === 0) {
+    // Ankunft — Zeiterfassung anlegen
+    setSaving()
+    try {
+      const istStart = now()
+      const res = await sbPost('zeiterfassung', {
+        auftrag_id: a.id,
+        ist_start: istStart,
+      })
+      zeitIds[ai] = res[0].id
+      if(!auftraege[ai].zeit) auftraege[ai].zeit = {}
+      auftraege[ai].zeit.ist_start = istStart
+      auftraege[ai].zeit.id = res[0].id
+      // Auftrag auf aktiv setzen
+      await sbPatch('auftraege', a.id, {status:'aktiv'})
+      auftragStep[ai] = 1
+    } catch(e) { alert(t('fehler')+': '+e.message); ladeAuftraege(); return }
+
+  } else if(step === 1) {
+    // Arbeitsende
+    setSaving()
+    try {
+      const istEnde = now()
+      const abwNeu = abwMin(a.soll_ende, istEnde)
+      if(!auftraege[ai].zeit) auftraege[ai].zeit = {}
+      auftraege[ai].zeit.ist_ende = istEnde
+      auftraege[ai].zeit.abweichung_minuten = abwNeu
+
+      await sbPatch('zeiterfassung', zeitIds[ai], {
+        ist_ende: istEnde,
+        abweichung_minuten: abwNeu,
+      })
+      auftragStep[ai] = (abwNeu && Math.abs(abwNeu) > 5) ? 2 : 3
+    } catch(e) { alert(t('fehler')+': '+e.message); return }
+
+  } else if(step === 2) {
+    // Begründung speichern
+    const ta = document.getElementById('begr-'+ai)
+    const begr = ta ? ta.value.trim() : ''
+    if(!begr) { if(ta){ta.classList.add('err');ta.focus()} alert(t('pflicht')); return }
+    setSaving()
+    try {
+      await sbPatch('zeiterfassung', zeitIds[ai], {abweichung_begruendung: begr})
+      if(!auftraege[ai].zeit) auftraege[ai].zeit = {}
+      auftraege[ai].zeit.abweichung_begruendung = begr
+      auftragStep[ai] = 3
+    } catch(e) { alert(t('fehler')+': '+e.message); return }
+
+  } else if(step === 3) {
+    // Fahrt bestätigen
+    const fahrt = auftraege[ai].zeit?.fahrt_ziel
+    if(!fahrt) { alert(t('zielPflicht')); return }
+    setSaving()
+    try {
+      await sbPatch('zeiterfassung', zeitIds[ai], {fahrt_ziel: fahrt, fahrt_start: now()})
+      await sbPatch('auftraege', a.id, {status:'abgeschlossen'})
+      auftragStep[ai] = 4
+      if(auftraege.every((_,i) => auftragStep[i] >= 4)) tagFertig = true
+    } catch(e) { alert(t('fehler')+': '+e.message); return }
+  }
+
+  render()
+  window.scrollTo({top:0,behavior:'smooth'})
+}
+
+// ── SPRACHE ───────────────────────────────────────────────────
+function setLang(l) {
+  lang = l
+  document.getElementById('lb-de').className = 'lang-btn'+(l==='de'?' on':'')
+  document.getElementById('lb-pl').className = 'lang-btn'+(l==='pl'?' on':'')
+  if(curMa) render()
+}
+
+// ── START ─────────────────────────────────────────────────────
+document.getElementById('l-pin').addEventListener('keydown', e => { if(e.key==='Enter') login() })
+initLogin()
+</script>
+</body>
+</html>
