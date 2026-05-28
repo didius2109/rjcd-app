@@ -8,6 +8,17 @@
   <title>RJCD – Meine Aufträge</title>
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+  <script>
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    OneSignalDeferred.push(async function(OneSignal) {
+      await OneSignal.init({
+        appId: '4b121a07-c5d1-4ff4-8470-c5c51e3fea35',
+        notifyButton: { enable: false },
+        allowLocalhostAsSecureOrigin: true,
+      });
+    });
+  </script>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     :root{
@@ -358,6 +369,10 @@ async function login(){
   document.getElementById('app').classList.add('show')
   document.getElementById('tb-name').textContent=curMa.name
   document.getElementById('tb-date').textContent=new Date().toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'})
+
+  // OneSignal: Push-Berechtigung anfragen und ID in Supabase speichern
+  registrierePush(curMa.id)
+
   await ladeAuftraege()
 }
 
@@ -369,6 +384,38 @@ function logout(){
   document.getElementById('app').classList.remove('show')
   document.getElementById('l-ma').value='';document.getElementById('l-pin').value=''
   document.getElementById('l-err').style.display='none'
+}
+
+// ── ONESIGNAL PUSH ───────────────────────────────────────────
+async function registrierePush(maId) {
+  try {
+    if(!window.OneSignal) return
+    // Berechtigung anfragen
+    await OneSignal.Notifications.requestPermission()
+    // External ID setzen (= Supabase MA-ID)
+    await OneSignal.login(maId)
+    // OneSignal Player-ID in Supabase speichern
+    const playerId = await OneSignal.User.PushSubscription.id
+    if(playerId) {
+      await sbPatch('mitarbeiter', maId, {onesignal_id: playerId})
+    }
+  } catch(e) {
+    console.log('Push-Registrierung:', e.message)
+  }
+}
+
+async function sendePushAnChef(titel, text) {
+  // Chef-Push über Supabase Edge Function (kommt im nächsten Schritt)
+  try {
+    await fetch('https://grxpfsrctfhtamwrqooz.supabase.co/functions/v1/send-push', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + '4b121a07-c5d1-4ff4-8470-c5c51e3fea35',
+      },
+      body: JSON.stringify({typ:'chef', titel, text})
+    })
+  } catch(e) { console.log('Chef-Push:', e) }
 }
 
 // ── NAVIGATION ────────────────────────────────────────────────
@@ -699,6 +746,14 @@ async function nextStep(ai){
       await sbPatch('zeiterfassung',zeitIds[ai],{fahrt_ziel:fahrt,fahrt_start:now()})
       await sbPatch('auftraege',a.id,{status:'abgeschlossen'})
       aStep[ai]=4
+      // Push an Chef senden
+      const abwText = a.zeit?.abweichung_minuten && Math.abs(a.zeit.abweichung_minuten) > 5
+        ? ` · ${a.zeit.abweichung_minuten > 0 ? '+' : ''}${a.zeit.abweichung_minuten}min`
+        : ''
+      await sendePushAnChef(
+        '✅ Auftrag abgeschlossen',
+        `${curMa.name}: ${a.objekt.name} · Ende: ${a.zeit?.ist_ende||''}${abwText}`
+      )
       const heute=toISO(new Date())
       const heuteAuftr=auftraege.filter(a=>a.datum===heute)
       if(heuteAuftr.every(a=>{const i=auftraege.indexOf(a);return aStep[i]>=4}))tagFertig=true

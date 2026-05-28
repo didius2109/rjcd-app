@@ -152,6 +152,20 @@
       .main { padding: 12px; }
     }
   </style>
+  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+  <script>
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    OneSignalDeferred.push(async function(OneSignal) {
+      await OneSignal.init({
+        appId: '4b121a07-c5d1-4ff4-8470-c5c51e3fea35',
+        notifyButton: { enable: false },
+        allowLocalhostAsSecureOrigin: true,
+      });
+      // Chef als 'chef' registrieren
+      await OneSignal.Notifications.requestPermission()
+      await OneSignal.login('chef')
+    });
+  </script>
 </head>
 <body>
 <div class="app">
@@ -639,18 +653,37 @@ function updateKalk() {
 }
 
 async function saveAuftrag() {
+  const maId   = document.getElementById('am-ma').value
+  const objId  = document.getElementById('am-obj').value
+  const datum  = document.getElementById('am-datum').value
+  const start  = document.getElementById('am-start').value || null
+  const ende   = document.getElementById('am-end').value || null
   const data = {
-    mitarbeiter_id: document.getElementById('am-ma').value,
-    objekt_id: document.getElementById('am-obj').value,
-    datum: document.getElementById('am-datum').value,
-    soll_start: document.getElementById('am-start').value || null,
-    soll_ende: document.getElementById('am-end').value || null,
+    mitarbeiter_id: maId,
+    objekt_id: objId,
+    datum,
+    soll_start: start,
+    soll_ende: ende,
     anmerkung: document.getElementById('am-aufg').value || null,
     status: 'geplant'
   }
   try {
+    const istNeu = !editAuftragId
     if(editAuftragId) await sbPatch('auftraege', editAuftragId, data)
     else await sbPost('auftraege', data)
+
+    // Push an Mitarbeiter senden
+    const ma  = mitarbeiter.find(m => m.id === maId)
+    const obj = objekte.find(o => o.id === objId)
+    if(ma && obj) {
+      const datumFmt = new Date(datum+'T12:00:00').toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'2-digit'})
+      await sendPushAnMA({
+        maId,
+        titel: istNeu ? '📋 Neuer Auftrag' : '✏️ Auftrag geändert',
+        text:  `${obj.name} · ${datumFmt} · ${start||''}${ende?'–'+ende:''}`,
+      })
+    }
+
     closeModal('auftrag-modal')
     await loadWoche()
   } catch(e) { alert('Fehler: ' + e.message) }
@@ -777,6 +810,57 @@ async function deleteObj() {
     renderObjGrid()
   } catch(e) { alert('Fehler: ' + e.message) }
 }
+
+// ── ONESIGNAL PUSH ───────────────────────────────────────────
+const OS_APP_ID  = '4b121a07-c5d1-4ff4-8470-c5c51e3fea35'
+const OS_API_KEY = '5us2twe3buuemskxgyit6qmtw'
+
+async function sendPushAnMA({ maId, titel, text, url = '/ma-app.html' }) {
+  try {
+    await fetch('https://onesignal.com/api/v1/notifications', {
+      method: 'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': `Basic ${OS_API_KEY}`,
+      },
+      body: JSON.stringify({
+        app_id:   OS_APP_ID,
+        headings: { de: titel, pl: titel },
+        contents: { de: text,  pl: text  },
+        url:      `https://rjcd-app.vercel.app${url}`,
+        include_aliases:  { external_id: [maId] },
+        target_channel:   'push',
+      })
+    })
+    console.log('Push gesendet:', titel)
+  } catch(e) { console.log('Push Fehler:', e) }
+}
+
+// Erinnerungen prüfen und senden (alle 10 Minuten)
+async function pruefeErinnerungen() {
+  try {
+    const jetzt = new Date().toISOString()
+    const faellig = await sbGet('push_erinnerungen',
+      `geplant_fuer=lte.${jetzt}&gesendet=eq.false&select=id,auftrag_id`)
+    for(const e of faellig) {
+      const auftr = await sbGet('auftraege',
+        `id=eq.${e.auftrag_id}&select=id,soll_start,soll_ende,datum,mitarbeiter_id,objekt_id`)
+      if(!auftr.length) continue
+      const a   = auftr[0]
+      const obj = objekte.find(o => o.id === a.objekt_id)
+      if(!obj) continue
+      await sendPushAnMA({
+        maId:  a.mitarbeiter_id,
+        titel: '⏰ Erinnerung – in 1 Stunde',
+        text:  `${obj.name} · Beginn: ${a.soll_start} Uhr`,
+      })
+      await sbPatch('push_erinnerungen', e.id, {gesendet: true})
+    }
+  } catch(e) { console.log('Erinnerungen:', e) }
+}
+
+// Alle 10 Minuten Erinnerungen prüfen
+setInterval(pruefeErinnerungen, 10 * 60 * 1000)
 
 // ── MITARBEITER TABS ──────────────────────────────────────────
 let curMaTab = 'liste'
