@@ -278,7 +278,7 @@ const TX={
     istBeginn:'Ist-Beginn',istEnde:'Ist-Ende',
     btnAnkunft:'Ankunft bestätigen',btnEnde:'Arbeitsende bestätigen',
     btnAbw:'Abweichung speichern & abschließen',btnWeiter:'Abschließen & weiter',
-    btnFahrt:'Fahrt bestätigen',btnEdit:'Zeiten korrigieren',
+    btnFahrt:'Fahrt bestätigen',btnEdit:'Aufträge anzeigen / korrigieren',
     abwTit:'Abweichung von Sollzeit',abwLbl:'Bitte Begründung eingeben:',
     abwPh:'z.B. Zusatzarbeiten angefordert, Objekt stärker verschmutzt ...',
     fahrtTit:'Wohin fahren Sie jetzt?',fahrtHeim:'Nach Hause',fahrtNext:'Nächstes Objekt',
@@ -297,7 +297,7 @@ const TX={
     istBeginn:'Rzeczywisty początek',istEnde:'Rzeczywisty koniec',
     btnAnkunft:'Potwierdź przybycie',btnEnde:'Potwierdź koniec pracy',
     btnAbw:'Zapisz odchylenie i zakończ',btnWeiter:'Zakończ i kontynuuj',
-    btnFahrt:'Potwierdź przejazd',btnEdit:'Koryguj czasy',
+    btnFahrt:'Potwierdź przejazd',btnEdit:'Pokaż / koryguj zlecenia',
     abwTit:'Odchylenie od czasu planowanego',abwLbl:'Proszę podać uzasadnienie:',
     abwPh:'np. dodatkowe prace zlecone, obiekt bardziej zabrudzony ...',
     fahrtTit:'Dokąd teraz jedziesz?',fahrtHeim:'Do domu',fahrtNext:'Następny obiekt',
@@ -447,9 +447,18 @@ function renderHeute(){
   </div>`
 
   if(tagFertig){
+    // Abgeschlossene Aufträge trotzdem anzeigen mit Edit-Button
+    const heuteAuftr=auftraege.filter(a=>a.datum===toISO(new Date()))
     document.getElementById('main').innerHTML=`
-      <div class="fertig-card"><div class="fertig-icon"><i class="ti ti-circle-check" aria-hidden="true"></i></div>
-      <div class="fertig-tit">${t('tagFertigTit')}</div><div class="fertig-sub">${t('tagFertigSub')}</div></div>${nzBanner}`
+      <div class="fertig-card">
+        <div class="fertig-icon"><i class="ti ti-circle-check" aria-hidden="true"></i></div>
+        <div class="fertig-tit">${t('tagFertigTit')}</div>
+        <div class="fertig-sub">${t('tagFertigSub')}</div>
+        <button onclick="tagFertig=false;render()" style="margin-top:14px;background:rgba(0,0,0,0.12);color:var(--green-text);border:none;border-radius:var(--radius);padding:9px 18px;font-size:13px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:6px">
+          <i class="ti ti-edit" aria-hidden="true"></i> ${t('btnEdit')}
+        </button>
+      </div>
+      ${nzBanner}`
     return
   }
   if(!heuteAuftr.length){
