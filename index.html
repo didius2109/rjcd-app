@@ -928,9 +928,115 @@ function setView(v) {
 
 function setGridView(v) {
   curGridView = v
-  document.querySelectorAll('.vt-btn').forEach((b,i)=>{
+  document.querySelectorAll('.vt-btn').forEach((b,i) => {
     b.className = 'vt-btn' + (['woche','tag'][i]===v?' active':'')
   })
+  if(v === 'woche') renderGrid()
+  if(v === 'tag')   renderTag()
+}
+
+function renderTag() {
+  const mo    = getMonday(curWeek)
+  const today = new Date(); today.setHours(0,0,0,0)
+  let selectedDay = 0
+  for(let i=0; i<7; i++) {
+    const dd = addDays(mo, i)
+    if(dd.getTime() === today.getTime()) { selectedDay = i; break }
+  }
+  let tabsHtml = '<div style="display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap">'
+  for(let i=0; i<6; i++) {
+    const dd = addDays(mo, i)
+    const n  = auftraege.filter(a => a.datum === toISO(dd)).length
+    tabsHtml += `<button onclick="renderTagDay(${i})" id="day-tab-${i}"
+      style="font-size:11px;padding:5px 10px;border-radius:6px;border:0.5px solid var(--border2);
+      background:${i===selectedDay?'var(--text)':'var(--bg2)'};
+      color:${i===selectedDay?'var(--bg2)':'var(--text2)'};cursor:pointer;position:relative">
+      ${TAGE_KURZ[i]} ${fmt(dd)}
+      ${n?`<span style="position:absolute;top:-5px;right:-5px;background:var(--blue);color:#fff;font-size:9px;font-weight:500;padding:1px 5px;border-radius:8px">${n}</span>`:''}
+    </button>`
+  }
+  tabsHtml += `</div><div id="tag-inhalt"></div>`
+  document.getElementById('grid-container').innerHTML = tabsHtml
+  renderTagDay(selectedDay)
+}
+
+function renderTagDay(dayIdx) {
+  for(let i=0; i<6; i++) {
+    const btn = document.getElementById('day-tab-'+i)
+    if(!btn) continue
+    btn.style.background = i===dayIdx?'var(--text)':'var(--bg2)'
+    btn.style.color      = i===dayIdx?'var(--bg2)':'var(--text2)'
+  }
+  const mo     = getMonday(curWeek)
+  const dd     = addDays(mo, dayIdx)
+  const dayStr = toISO(dd)
+  const da     = auftraege.filter(a => a.datum === dayStr)
+    .sort((a,b) => (a.soll_start||'').localeCompare(b.soll_start||''))
+
+  if(!da.length) {
+    document.getElementById('tag-inhalt').innerHTML =
+      `<div style="color:var(--text2);font-size:13px;padding:32px;text-align:center">
+        <i class="ti ti-calendar-off" style="font-size:32px;opacity:.3;display:block;margin-bottom:10px" aria-hidden="true"></i>
+        Keine Aufträge für ${TAGE_KURZ[dayIdx]} ${fmt(dd)}
+      </div>`
+    return
+  }
+
+  const tagU = da.reduce((s,a) => s+auftragUmsatz(a), 0)
+  const tagH = da.reduce((s,a) => s+calcH(a.soll_start,a.soll_ende), 0)
+
+  let html = `<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+    <div style="background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius);padding:8px 12px;font-size:12px">
+      <div style="color:var(--text2);margin-bottom:2px">Aufträge</div>
+      <div style="font-weight:500">${da.length}</div>
+    </div>
+    <div style="background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius);padding:8px 12px;font-size:12px">
+      <div style="color:var(--text2);margin-bottom:2px">Soll-Stunden</div>
+      <div style="font-weight:500">${tagH.toFixed(1)}h</div>
+    </div>
+    ${tagU>0?`<div style="background:var(--green-bg);border:0.5px solid rgba(29,158,117,0.2);border-radius:var(--radius);padding:8px 12px;font-size:12px">
+      <div style="color:var(--green-text);margin-bottom:2px">Tagesumsatz</div>
+      <div style="font-weight:500;color:var(--green)">${fmtEur(tagU)}</div>
+    </div>`:''}
+  </div>
+  <div style="display:flex;flex-direction:column;gap:8px">`
+
+  da.forEach(a => {
+    const ma  = mitarbeiter.find(m => m.id === a.mitarbeiter_id) || {nachname:'?', farbe_idx:0}
+    const obj = getObjData(a.objekt_id)
+    const f   = FARBEN[ma.farbe_idx || 0]
+    const ini = ((ma.vorname?ma.vorname[0]:'') + (ma.nachname?ma.nachname[0]:'')).toUpperCase() || '?'
+    const u   = auftragUmsatz(a)
+    const h   = calcH(a.soll_start, a.soll_ende)
+    const statusLabel = a.status==='abgeschlossen'?'Abgeschlossen':a.status==='aktiv'?'Im Einsatz':'Geplant'
+    const statusColor = a.status==='abgeschlossen'?'var(--green-text)':a.status==='aktiv'?'var(--blue-text)':'var(--text3)'
+    const statusBg    = a.status==='abgeschlossen'?'var(--green-bg)':a.status==='aktiv'?'var(--blue-bg)':'var(--bg3)'
+
+    html += `<div style="background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius-lg);
+      overflow:hidden;cursor:pointer" onclick="openAuftragModal('${a.id}',null)">
+      <div style="display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;padding:12px 14px">
+        <div style="width:34px;height:34px;border-radius:50%;background:${f.bg};color:${f.txt};
+          display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;flex-shrink:0">${ini}</div>
+        <div>
+          <div style="font-size:13px;font-weight:500;margin-bottom:3px">${obj.name||'?'}</div>
+          <div style="font-size:11px;color:var(--text2);display:flex;gap:8px;flex-wrap:wrap">
+            <span>${ma.nachname}</span>
+            <span>${a.soll_start||''}${a.soll_ende?'–'+a.soll_ende:''}</span>
+            ${h>0?`<span>${h.toFixed(1)}h</span>`:''}
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+          <span style="font-size:10px;font-weight:500;padding:2px 8px;border-radius:8px;
+            background:${statusBg};color:${statusColor}">${statusLabel}</span>
+          ${u>0?`<span style="font-size:11px;font-weight:500;color:var(--green)">${fmtEur(u)}</span>`:''}
+        </div>
+      </div>
+      ${a.anmerkung?`<div style="padding:0 14px 10px;font-size:11px;color:var(--text2)">${a.anmerkung}</div>`:''}
+    </div>`
+  })
+
+  html += '</div>'
+  document.getElementById('tag-inhalt').innerHTML = html
 }
 
 // Modals schließen bei Klick außen
