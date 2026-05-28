@@ -378,7 +378,13 @@ function getKW(d) {
   const y = t.getUTCFullYear()
   return Math.ceil(((t - new Date(Date.UTC(y,0,4)))/86400000+1)/7)
 }
-function toISO(d) { return d.toISOString().split('T')[0] }
+function toISO(d) {
+  // Lokale Zeit verwenden statt UTC — verhindert Verschiebung um einen Tag
+  const y = d.getFullYear()
+  const m = String(d.getMonth()+1).padStart(2,'0')
+  const day = String(d.getDate()).padStart(2,'0')
+  return `${y}-${m}-${day}`
+}
 function toMin(t) { if(!t) return 0; const[h,m]=t.split(':').map(Number); return h*60+m }
 function calcH(s,e) { return Math.max(0,(toMin(e)-toMin(s))/60) }
 function fmtEur(n) { return n.toLocaleString('de-DE',{minimumFractionDigits:0,maximumFractionDigits:0})+'€' }
@@ -435,7 +441,9 @@ function renderGrid() {
   const today = new Date(); today.setHours(0,0,0,0)
   const tagU = Array(7).fill(0)
   auftraege.forEach(a => {
-    const d = new Date(a.datum)
+    // Datum als lokale Zeit parsen (nicht UTC) — z.B. "2026-05-28" → 28.05. statt 27.05.
+    const parts = a.datum.split('-').map(Number)
+    const d = new Date(parts[0], parts[1]-1, parts[2])
     const idx = Math.round((d - mo) / 86400000)
     if(idx >= 0 && idx < 7) tagU[idx] += auftragUmsatz(a)
   })

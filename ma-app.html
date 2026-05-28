@@ -142,8 +142,70 @@
     .leer i{font-size:44px;opacity:.3;display:block;margin-bottom:14px}
     .leer p{font-size:14px}
   </style>
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-title" content="RJCD">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <style>
+    .install-banner{display:none;position:fixed;bottom:20px;left:16px;right:16px;background:var(--text);color:var(--bg2);border-radius:var(--radius-lg);padding:14px 16px;z-index:200;align-items:center;gap:12px;box-shadow:0 4px 20px rgba(0,0,0,0.25)}
+    .install-banner.show{display:flex}
+    .install-icon{font-size:24px;flex-shrink:0}
+    .install-text{flex:1;font-size:13px;line-height:1.4}
+    .install-text strong{display:block;margin-bottom:2px;font-size:14px}
+    .install-btn{background:var(--bg2);color:var(--text);border:none;border-radius:var(--radius);padding:8px 14px;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap}
+    .install-close{background:none;border:none;color:rgba(255,255,255,0.6);font-size:20px;cursor:pointer;padding:4px;flex-shrink:0}
+    .ios-hint{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:0.5px solid var(--border2);border-radius:var(--radius-lg) var(--radius-lg) 0 0;padding:20px 16px 32px;z-index:200;box-shadow:0 -4px 20px rgba(0,0,0,0.15)}
+    .ios-hint.show{display:block}
+    .ios-hint-title{font-size:15px;font-weight:500;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+    .ios-steps{display:flex;flex-direction:column;gap:10px}
+    .ios-step{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--text2)}
+    .ios-step .step-num{width:26px;height:26px;border-radius:50%;background:var(--blue-bg);color:var(--blue-text);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;flex-shrink:0}
+    .ios-close{width:100%;background:var(--text);color:var(--bg2);border:none;border-radius:var(--radius);padding:12px;font-size:14px;font-weight:500;cursor:pointer;margin-top:16px}
+  </style>
 </head>
 <body>
+
+<!-- INSTALL BANNER (Android/Desktop) -->
+<div class="install-banner" id="install-banner">
+  <div class="install-icon">📲</div>
+  <div class="install-text">
+    <strong>App installieren</strong>
+    Auf dem Homescreen speichern
+  </div>
+  <button class="install-btn" onclick="doInstall()">Installieren</button>
+  <button class="install-close" onclick="closeInstall()">✕</button>
+</div>
+
+<!-- IOS HINT -->
+<div class="ios-hint" id="ios-hint">
+  <div class="ios-hint-title">
+    <i class="ti ti-device-mobile" aria-hidden="true"></i>
+    App auf dem Homescreen speichern
+  </div>
+  <div class="ios-steps">
+    <div class="ios-step">
+      <div class="step-num">1</div>
+      <span>Unten auf das <strong>Teilen-Symbol</strong> tippen <i class="ti ti-share" aria-hidden="true"></i></span>
+    </div>
+    <div class="ios-step">
+      <div class="step-num">2</div>
+      <span><strong>"Zum Home-Bildschirm"</strong> auswählen</span>
+    </div>
+    <div class="ios-step">
+      <div class="step-num">3</div>
+      <span>Oben rechts auf <strong>"Hinzufügen"</strong> tippen</span>
+    </div>
+  </div>
+  <div id="ios-hint-pl" style="display:none;margin-top:14px;padding-top:14px;border-top:0.5px solid var(--border)">
+    <div style="font-size:13px;font-weight:500;margin-bottom:8px;color:var(--text2)">🇵🇱 Polski:</div>
+    <div class="ios-steps">
+      <div class="ios-step"><div class="step-num">1</div><span>Dotknij ikony <strong>udostępniania</strong> na dole <i class="ti ti-share" aria-hidden="true"></i></span></div>
+      <div class="ios-step"><div class="step-num">2</div><span>Wybierz <strong>"Dodaj do ekranu głównego"</strong></span></div>
+      <div class="ios-step"><div class="step-num">3</div><span>Dotknij <strong>"Dodaj"</strong> w prawym górnym rogu</span></div>
+    </div>
+  </div>
+  <button class="ios-close" onclick="closeIosHint()">Verstanden</button>
+</div>
 
 <!-- LOGIN -->
 <div id="login" class="login">
@@ -274,7 +336,10 @@ function t(k){return TX[lang][k]||TX.de[k]||k}
 function now(){return new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})}
 function toMin(s){if(!s)return 0;const[h,m]=s.split(':').map(Number);return h*60+m}
 function abwMin(se,ie){if(!se||!ie)return null;return toMin(ie)-toMin(se)}
-function toISO(d){return d.toISOString().split('T')[0]}
+function toISO(d){
+  const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0')
+  return `${y}-${m}-${day}`
+}
 
 // ── INIT: Mitarbeiter laden ───────────────────────────────────
 async function initLogin() {
@@ -672,6 +737,38 @@ function setLang(l) {
 
 // ── START ─────────────────────────────────────────────────────
 document.getElementById('l-pin').addEventListener('keydown', e => { if(e.key==='Enter') login() })
+
+// ── PWA INSTALL ───────────────────────────────────────────────
+let deferredPrompt = null
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent)
+const isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true
+
+if(!isStandalone) {
+  if(isIOS) {
+    setTimeout(() => document.getElementById('ios-hint').classList.add('show'), 2000)
+  } else {
+    window.addEventListener('beforeinstallprompt', e => {
+      e.preventDefault()
+      deferredPrompt = e
+      document.getElementById('install-banner').classList.add('show')
+    })
+  }
+}
+async function doInstall() {
+  if(!deferredPrompt) return
+  deferredPrompt.prompt()
+  await deferredPrompt.userChoice
+  deferredPrompt = null
+  document.getElementById('install-banner').classList.remove('show')
+}
+function closeInstall() { document.getElementById('install-banner').classList.remove('show') }
+function closeIosHint()  { document.getElementById('ios-hint').classList.remove('show') }
+
+// Polnische iOS-Anleitung einblenden wenn Sprache PL
+function updateIosHintLang() {
+  document.getElementById('ios-hint-pl').style.display = lang === 'pl' ? 'block' : 'none'
+}
+
 initLogin()
 </script>
 </body>
