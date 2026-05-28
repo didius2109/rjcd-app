@@ -6,6 +6,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#ffffff">
   <title>RJCD – Meine Aufträge</title>
+  <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -39,32 +40,52 @@
     .btn-login:active{opacity:.85}
     .login-hint{font-size:11px;color:var(--text3);text-align:center;margin-top:10px}
     .err-box{background:var(--red-bg);border:0.5px solid var(--red);border-radius:var(--radius);padding:10px 12px;font-size:13px;color:var(--red-text);margin-top:12px;display:none}
+    .spinner{width:20px;height:20px;border:2.5px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+    @keyframes spin{to{transform:rotate(360deg)}}
 
-    /* APP */
+    /* APP SHELL */
     .app{display:none;flex-direction:column;min-height:100vh}
     .app.show{display:flex}
-    .topbar{background:var(--bg2);border-bottom:0.5px solid var(--border2);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+    .topbar{background:var(--bg2);border-bottom:0.5px solid var(--border2);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
     .tb-name{font-size:15px;font-weight:500}
-    .tb-date{font-size:12px;color:var(--text2)}
+    .tb-date{font-size:11px;color:var(--text2)}
     .lang-toggle{display:flex;gap:3px}
     .lang-btn{font-size:11px;font-weight:500;padding:4px 9px;border-radius:20px;border:0.5px solid var(--border2);background:none;cursor:pointer;color:var(--text2)}
     .lang-btn.on{background:var(--text);color:var(--bg2);border-color:var(--text)}
     .logout-btn{background:none;border:none;cursor:pointer;color:var(--text3);font-size:20px;padding:4px;margin-left:8px}
-    .main{flex:1;padding:16px;overflow-y:auto;padding-bottom:40px}
 
-    /* LOADING */
-    .loading{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 24px;gap:12px;color:var(--text2)}
-    .spinner{width:28px;height:28px;border:2.5px solid var(--border2);border-top-color:var(--text);border-radius:50%;animation:spin .7s linear infinite}
-    @keyframes spin{to{transform:rotate(360deg)}}
+    /* BOTTOM NAV */
+    .bottom-nav{background:var(--bg2);border-top:0.5px solid var(--border2);display:flex;position:sticky;bottom:0;z-index:10}
+    .bnav-btn{flex:1;padding:10px 4px 8px;background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--text3);font-size:10px;font-weight:500}
+    .bnav-btn i{font-size:22px}
+    .bnav-btn.on{color:var(--blue)}
+    .main{flex:1;padding:16px;overflow-y:auto;padding-bottom:16px}
 
-    /* NEBENZEIT BANNER */
+    /* WOCHENANSICHT */
+    .wo-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+    .wo-nav{display:flex;align-items:center;gap:6px}
+    .wo-navbtn{background:none;border:0.5px solid var(--border2);border-radius:8px;padding:4px 10px;font-size:12px;cursor:pointer;color:var(--text2)}
+    .wo-label{font-size:13px;font-weight:500;min-width:130px;text-align:center}
+    .wo-grid{display:flex;flex-direction:column;gap:6px}
+    .wo-tag{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
+    .wo-tag-hdr{padding:10px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer}
+    .wo-tag-hdr.heute{background:var(--blue-bg)}
+    .wo-tag-datum{font-size:13px;font-weight:500}
+    .wo-tag-datum.heute{color:var(--blue-text)}
+    .wo-tag-info{font-size:11px;color:var(--text2)}
+    .wo-auftraege{padding:0 10px 10px;display:flex;flex-direction:column;gap:6px}
+    .wo-chip{display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius);cursor:pointer}
+    .wo-chip:active{background:var(--bg3)}
+    .wo-chip-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+    .wo-chip-obj{font-size:13px;font-weight:500;flex:1}
+    .wo-chip-zeit{font-size:11px;color:var(--text2)}
+    .wo-chip-status{font-size:10px;font-weight:500;padding:2px 7px;border-radius:8px}
+    .wo-leer{padding:12px 14px;font-size:12px;color:var(--text3);font-style:italic}
+
+    /* TAGESANSICHT */
     .nz-banner{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;gap:12px}
     .nz-icon{width:36px;height:36px;border-radius:var(--radius);background:var(--green-bg);display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--green);flex-shrink:0}
-    .nz-t{font-size:13px;font-weight:500;margin-bottom:2px}
-    .nz-s{font-size:11px;color:var(--text2)}
     .nz-pill{font-size:13px;font-weight:500;padding:5px 12px;border-radius:20px;background:var(--green-bg);color:var(--green-text);white-space:nowrap;margin-left:auto}
-
-    /* AUFTRAG KARTE */
     .a-list{display:flex;flex-direction:column;gap:14px}
     .a-card{background:var(--bg2);border-radius:var(--radius-lg);border:0.5px solid var(--border);overflow:hidden}
     .a-card.aktiv{border:1.5px solid var(--blue)}
@@ -78,8 +99,6 @@
     .pill.geplant{background:var(--bg3);color:var(--text2)}
     .pill.aktiv{background:var(--blue-bg);color:var(--blue-text)}
     .pill.fertig{background:var(--green-bg);color:var(--green-text)}
-
-    /* AUFGABEN */
     .a-aufg{padding:0 16px 10px}
     .a-aufg-hdr{font-size:11px;font-weight:500;color:var(--text2);margin-bottom:6px;display:flex;justify-content:space-between}
     .prog{height:4px;background:var(--bg3);border-radius:2px;margin-bottom:8px}
@@ -87,40 +106,30 @@
     .aufg-item{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:var(--radius);border:0.5px solid var(--border);margin-bottom:6px;cursor:pointer;background:var(--bg);transition:background .12s}
     .aufg-item:active{background:var(--bg3)}
     .aufg-item.done{background:var(--green-bg);border-color:rgba(29,158,117,0.25)}
-    .chk{width:22px;height:22px;border-radius:6px;border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+    .chk{width:22px;height:22px;border-radius:6px;border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;flex-shrink:0}
     .aufg-item.done .chk{background:var(--green);border-color:var(--green);color:#fff}
     .aufg-txt{font-size:14px;flex:1}
     .aufg-item.done .aufg-txt{color:var(--text2);text-decoration:line-through}
-
-    /* ZEITEN */
     .a-zeiten{padding:0 16px 10px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
     .z-box{background:var(--bg3);border-radius:var(--radius);padding:10px 12px}
     .z-lbl{font-size:10px;color:var(--text2);margin-bottom:3px}
     .z-val{font-size:16px;font-weight:500}
     .z-val.leer{font-size:13px;font-weight:400;color:var(--text3)}
-
-    /* ABWEICHUNG */
     .abw{margin:0 16px 12px;background:var(--amber-bg);border:0.5px solid #fde047;border-radius:var(--radius);padding:12px 14px}
     .abw-hdr{font-size:13px;font-weight:500;color:var(--amber-text);margin-bottom:4px;display:flex;align-items:center;gap:6px}
     .abw-diff{font-size:13px;color:var(--amber-text);margin-bottom:8px}
     .abw-lbl{font-size:12px;color:var(--amber-text);margin-bottom:6px}
     .abw textarea{width:100%;font-size:13px;padding:10px;border:0.5px solid #fde047;border-radius:8px;background:rgba(255,255,255,0.6);color:var(--amber-text);min-height:68px;resize:none;font-family:var(--font)}
-    .abw textarea::placeholder{color:rgba(99,56,6,0.45)}
     .abw textarea.err{border-color:var(--red)}
-
-    /* FAHRT */
     .fahrt{padding:0 16px 12px}
     .fahrt-tit{font-size:13px;font-weight:500;margin-bottom:8px}
     .fahrt-opts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
     .f-opt{padding:14px 10px;border-radius:var(--radius);border:0.5px solid var(--border2);background:var(--bg);cursor:pointer;text-align:center;transition:all .15s}
-    .f-opt:active{background:var(--bg3)}
     .f-opt.on{background:var(--blue-bg);border-color:var(--blue)}
     .f-opt i{font-size:24px;color:var(--text2);display:block;margin-bottom:5px}
     .f-opt.on i{color:var(--blue)}
     .f-opt span{font-size:13px;color:var(--text2)}
     .f-opt.on span{color:var(--blue-text);font-weight:500}
-
-    /* BUTTON */
     .a-btn{padding:0 16px 16px}
     .mbtn{width:100%;padding:14px;border-radius:var(--radius);border:none;font-size:15px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity .15s}
     .mbtn:active{opacity:.82}
@@ -128,83 +137,63 @@
     .mbtn.blue{background:var(--blue);color:#fff}
     .mbtn.green{background:var(--green);color:#fff}
     .mbtn.gray{background:var(--bg3);color:var(--text2)}
-
-    /* SPEICHERN FEEDBACK */
+    .mbtn.orange{background:var(--amber);color:#fff}
     .saving{display:flex;align-items:center;justify-content:center;gap:8px;font-size:13px;color:var(--text2);padding:8px}
-
-    /* FERTIG */
+    .spin2{width:18px;height:18px;border:2px solid var(--border2);border-top-color:var(--text);border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
     .fertig-card{background:var(--green-bg);border:0.5px solid rgba(29,158,117,0.3);border-radius:var(--radius-lg);padding:28px 20px;text-align:center;margin-top:8px}
     .fertig-icon{font-size:48px;color:var(--green);margin-bottom:12px}
     .fertig-tit{font-size:18px;font-weight:500;color:var(--green-text);margin-bottom:6px}
     .fertig-sub{font-size:14px;color:var(--green-text);opacity:.75}
-
     .leer{text-align:center;padding:56px 24px;color:var(--text2)}
     .leer i{font-size:44px;opacity:.3;display:block;margin-bottom:14px}
     .leer p{font-size:14px}
-  </style>
-  <!-- PWA -->
-  <link rel="manifest" href="manifest.json">
-  <meta name="apple-mobile-web-app-title" content="RJCD">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <style>
-    .install-banner{display:none;position:fixed;bottom:20px;left:16px;right:16px;background:var(--text);color:var(--bg2);border-radius:var(--radius-lg);padding:14px 16px;z-index:200;align-items:center;gap:12px;box-shadow:0 4px 20px rgba(0,0,0,0.25)}
+
+    /* EDIT MODAL */
+    .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);align-items:flex-end;justify-content:center;z-index:50}
+    .modal-bg.open{display:flex}
+    .modal{background:var(--bg2);border-radius:var(--radius-lg) var(--radius-lg) 0 0;padding:20px;width:100%;max-height:80vh;overflow-y:auto}
+    .modal h3{font-size:15px;font-weight:500;margin-bottom:16px}
+    .modal label{font-size:12px;color:var(--text2);display:block;margin-bottom:3px;margin-top:12px}
+    .modal input,.modal textarea{width:100%;font-size:14px;padding:10px 12px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text)}
+    .modal textarea{min-height:68px;resize:none;font-family:var(--font)}
+    .r2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .modal-btns{display:flex;gap:8px;margin-top:16px}
+    .mbtn-save{flex:1;background:var(--text);color:var(--bg2);border:none;border-radius:var(--radius);padding:12px;font-size:14px;font-weight:500;cursor:pointer}
+    .mbtn-cancel{background:none;border:0.5px solid var(--border2);border-radius:var(--radius);padding:12px;font-size:14px;cursor:pointer;color:var(--text2)}
+
+    /* INSTALL */
+    .install-banner{display:none;position:fixed;bottom:72px;left:12px;right:12px;background:var(--text);color:var(--bg2);border-radius:var(--radius-lg);padding:12px 14px;z-index:200;align-items:center;gap:10px;box-shadow:0 4px 20px rgba(0,0,0,0.25)}
     .install-banner.show{display:flex}
-    .install-icon{font-size:24px;flex-shrink:0}
-    .install-text{flex:1;font-size:13px;line-height:1.4}
-    .install-text strong{display:block;margin-bottom:2px;font-size:14px}
-    .install-btn{background:var(--bg2);color:var(--text);border:none;border-radius:var(--radius);padding:8px 14px;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap}
-    .install-close{background:none;border:none;color:rgba(255,255,255,0.6);font-size:20px;cursor:pointer;padding:4px;flex-shrink:0}
-    .ios-hint{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:0.5px solid var(--border2);border-radius:var(--radius-lg) var(--radius-lg) 0 0;padding:20px 16px 32px;z-index:200;box-shadow:0 -4px 20px rgba(0,0,0,0.15)}
+    .install-btn{background:var(--bg2);color:var(--text);border:none;border-radius:var(--radius);padding:7px 12px;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap}
+    .install-close{background:none;border:none;color:rgba(255,255,255,0.5);font-size:18px;cursor:pointer;margin-left:auto}
+    .ios-hint{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:0.5px solid var(--border2);border-radius:var(--radius-lg) var(--radius-lg) 0 0;padding:20px 16px 40px;z-index:200;box-shadow:0 -4px 20px rgba(0,0,0,0.15)}
     .ios-hint.show{display:block}
-    .ios-hint-title{font-size:15px;font-weight:500;margin-bottom:12px;display:flex;align-items:center;gap:8px}
-    .ios-steps{display:flex;flex-direction:column;gap:10px}
-    .ios-step{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--text2)}
-    .ios-step .step-num{width:26px;height:26px;border-radius:50%;background:var(--blue-bg);color:var(--blue-text);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;flex-shrink:0}
-    .ios-close{width:100%;background:var(--text);color:var(--bg2);border:none;border-radius:var(--radius);padding:12px;font-size:14px;font-weight:500;cursor:pointer;margin-top:16px}
+    .ios-step{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--text2);margin-bottom:10px}
+    .ios-num{width:26px;height:26px;border-radius:50%;background:var(--blue-bg);color:var(--blue-text);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;flex-shrink:0}
+    .ios-close{width:100%;background:var(--text);color:var(--bg2);border:none;border-radius:var(--radius);padding:12px;font-size:14px;font-weight:500;cursor:pointer;margin-top:14px}
   </style>
 </head>
 <body>
 
-<!-- INSTALL BANNER (Android/Desktop) -->
+<!-- INSTALL -->
 <div class="install-banner" id="install-banner">
-  <div class="install-icon">📲</div>
-  <div class="install-text">
-    <strong>App installieren</strong>
-    Auf dem Homescreen speichern
-  </div>
+  <span style="font-size:22px">📲</span>
+  <div style="flex:1;font-size:12px"><strong style="display:block;font-size:13px">App installieren</strong>Zum Homescreen hinzufügen</div>
   <button class="install-btn" onclick="doInstall()">Installieren</button>
   <button class="install-close" onclick="closeInstall()">✕</button>
 </div>
-
-<!-- IOS HINT -->
 <div class="ios-hint" id="ios-hint">
-  <div class="ios-hint-title">
-    <i class="ti ti-device-mobile" aria-hidden="true"></i>
-    App auf dem Homescreen speichern
+  <div style="font-size:15px;font-weight:500;margin-bottom:14px">📱 App auf Homescreen speichern</div>
+  <div class="ios-step"><div class="ios-num">1</div><span>Unten auf das <strong>Teilen-Symbol</strong> tippen</span></div>
+  <div class="ios-step"><div class="ios-num">2</div><span><strong>„Zum Home-Bildschirm"</strong> wählen</span></div>
+  <div class="ios-step"><div class="ios-num">3</div><span>Oben rechts <strong>„Hinzufügen"</strong> tippen</span></div>
+  <div id="ios-pl" style="display:none;margin-top:12px;padding-top:12px;border-top:0.5px solid var(--border)">
+    <div style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:8px">🇵🇱 Dodaj do ekranu głównego:</div>
+    <div class="ios-step"><div class="ios-num">1</div><span>Dotknij ikony <strong>udostępniania</strong> na dole</span></div>
+    <div class="ios-step"><div class="ios-num">2</div><span>Wybierz <strong>„Dodaj do ekranu głównego"</strong></span></div>
+    <div class="ios-step"><div class="ios-num">3</div><span>Dotknij <strong>„Dodaj"</strong></span></div>
   </div>
-  <div class="ios-steps">
-    <div class="ios-step">
-      <div class="step-num">1</div>
-      <span>Unten auf das <strong>Teilen-Symbol</strong> tippen <i class="ti ti-share" aria-hidden="true"></i></span>
-    </div>
-    <div class="ios-step">
-      <div class="step-num">2</div>
-      <span><strong>"Zum Home-Bildschirm"</strong> auswählen</span>
-    </div>
-    <div class="ios-step">
-      <div class="step-num">3</div>
-      <span>Oben rechts auf <strong>"Hinzufügen"</strong> tippen</span>
-    </div>
-  </div>
-  <div id="ios-hint-pl" style="display:none;margin-top:14px;padding-top:14px;border-top:0.5px solid var(--border)">
-    <div style="font-size:13px;font-weight:500;margin-bottom:8px;color:var(--text2)">🇵🇱 Polski:</div>
-    <div class="ios-steps">
-      <div class="ios-step"><div class="step-num">1</div><span>Dotknij ikony <strong>udostępniania</strong> na dole <i class="ti ti-share" aria-hidden="true"></i></span></div>
-      <div class="ios-step"><div class="step-num">2</div><span>Wybierz <strong>"Dodaj do ekranu głównego"</strong></span></div>
-      <div class="ios-step"><div class="step-num">3</div><span>Dotknij <strong>"Dodaj"</strong> w prawym górnym rogu</span></div>
-    </div>
-  </div>
-  <button class="ios-close" onclick="closeIosHint()">Verstanden</button>
+  <button class="ios-close" onclick="document.getElementById('ios-hint').classList.remove('show')">Verstanden / Rozumiem</button>
 </div>
 
 <!-- LOGIN -->
@@ -212,17 +201,13 @@
   <div class="login-logo">RJCD</div>
   <div class="login-sub">Gebäudereinigung</div>
   <div class="login-card">
-    <h2 id="l-h">Anmelden</h2>
+    <h2>Anmelden</h2>
     <label class="flbl" id="l-ma-lbl">Mitarbeiter</label>
-    <select id="l-ma" class="finp">
-      <option value="">— Bitte wählen —</option>
-    </select>
-    <label class="flbl" id="l-pin-lbl">PIN</label>
+    <select id="l-ma" class="finp"><option value="">— Bitte wählen —</option></select>
+    <label class="flbl">PIN</label>
     <input type="password" id="l-pin" class="finp" placeholder="••••" maxlength="4" inputmode="numeric" pattern="[0-9]*">
-    <button class="btn-login" id="l-btn" onclick="login()">
-      <span id="l-btn-txt">Anmelden</span>
-    </button>
-    <div class="login-hint" id="l-hint">Bitte persönlichen PIN eingeben</div>
+    <button class="btn-login" id="l-btn" onclick="login()"><span id="l-btn-txt">Anmelden</span></button>
+    <div class="login-hint">Bitte persönlichen PIN eingeben</div>
     <div class="err-box" id="l-err"></div>
   </div>
 </div>
@@ -243,532 +228,531 @@
     </div>
   </div>
   <div class="main" id="main"></div>
+  <nav class="bottom-nav">
+    <button class="bnav-btn on" id="nav-heute" onclick="setTab('heute')">
+      <i class="ti ti-sun" aria-hidden="true"></i>
+      <span id="nav-heute-lbl">Heute</span>
+    </button>
+    <button class="bnav-btn" id="nav-woche" onclick="setTab('woche')">
+      <i class="ti ti-calendar-week" aria-hidden="true"></i>
+      <span id="nav-woche-lbl">Woche</span>
+    </button>
+  </nav>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-bg" id="edit-modal">
+  <div class="modal">
+    <h3 id="edit-titel">Auftrag bearbeiten</h3>
+    <div style="background:var(--amber-bg);border:0.5px solid #fde047;border-radius:var(--radius);padding:10px 12px;font-size:12px;color:var(--amber-text);margin-bottom:12px">
+      <i class="ti ti-info-circle" style="font-size:13px;vertical-align:-2px" aria-hidden="true"></i>
+      <span id="edit-hinweis">Bitte nur korrigieren wenn die Zeiten falsch erfasst wurden.</span>
+    </div>
+    <div class="r2">
+      <div><label>Ist-Beginn</label><input type="time" id="edit-start"></div>
+      <div><label>Ist-Ende</label><input type="time" id="edit-ende"></div>
+    </div>
+    <label>Begründung / Anmerkung</label>
+    <textarea id="edit-begr" placeholder="Bitte Grund für die Korrektur angeben..."></textarea>
+    <div class="modal-btns">
+      <button class="mbtn-cancel" onclick="closeEditModal()">Abbrechen</button>
+      <button class="mbtn-save" onclick="saveEdit()">Speichern</button>
+    </div>
+  </div>
 </div>
 
 <script>
 // ── SUPABASE ──────────────────────────────────────────────────
-const SB_URL = 'https://grxpfsrctfhtamwrqooz.supabase.co'
-const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdyeHBmc3JjdGZodGFtd3Jxb296Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5MjExMTUsImV4cCI6MjA5NTQ5NzExNX0.gNADsG6yxVv8T3_Vni7DrOrLoMBQbu57zhy5f8pALbI'
-const HDR = {'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}
-
-async function sbGet(table, params='') {
-  const r = await fetch(`${SB_URL}/rest/v1/${table}?${params}`, {headers:HDR})
-  if(!r.ok) throw new Error(await r.text())
-  return r.json()
-}
-async function sbPost(table, data) {
-  const r = await fetch(`${SB_URL}/rest/v1/${table}`, {
-    method:'POST', headers:{...HDR,'Prefer':'return=representation'}, body:JSON.stringify(data)
-  })
-  if(!r.ok) throw new Error(await r.text())
-  return r.json()
-}
-async function sbPatch(table, id, data) {
-  const r = await fetch(`${SB_URL}/rest/v1/${table}?id=eq.${id}`, {
-    method:'PATCH', headers:{...HDR,'Prefer':'return=representation'}, body:JSON.stringify(data)
-  })
-  if(!r.ok) throw new Error(await r.text())
-  return r.json()
-}
+const SB_URL='https://grxpfsrctfhtamwrqooz.supabase.co'
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdyeHBmc3JjdGZodGFtd3Jxb296Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5MjExMTUsImV4cCI6MjA5NTQ5NzExNX0.gNADsG6yxVv8T3_Vni7DrOrLoMBQbu57zhy5f8pALbI'
+const HDR={'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}
+async function sbGet(t,p=''){const r=await fetch(`${SB_URL}/rest/v1/${t}?${p}`,{headers:HDR});if(!r.ok)throw new Error(await r.text());return r.json()}
+async function sbPost(t,d){const r=await fetch(`${SB_URL}/rest/v1/${t}`,{method:'POST',headers:{...HDR,'Prefer':'return=representation'},body:JSON.stringify(d)});if(!r.ok)throw new Error(await r.text());return r.json()}
+async function sbPatch(t,id,d){const r=await fetch(`${SB_URL}/rest/v1/${t}?id=eq.${id}`,{method:'PATCH',headers:{...HDR,'Prefer':'return=representation'},body:JSON.stringify(d)});if(!r.ok)throw new Error(await r.text());return r.json()}
 
 // ── ÜBERSETZUNGEN ─────────────────────────────────────────────
-const TX = {
-  de:{
-    auftraege:'Meine Aufträge heute',
+const TX={
+  de:{heute:'Heute',woche:'Diese Woche',
     geplant:'Geplant',aktiv:'Im Einsatz',fertig:'Abgeschlossen',
     aufgaben:'Aufgaben',erledigt:'erledigt',
     istBeginn:'Ist-Beginn',istEnde:'Ist-Ende',
-    btnAnkunft:'Ankunft bestätigen',
-    btnEnde:'Arbeitsende bestätigen',
-    btnAbw:'Abweichung speichern & abschließen',
-    btnWeiter:'Abschließen & weiter',
-    btnFahrt:'Fahrt bestätigen',
-    abwTit:'Abweichung von Sollzeit',
-    abwLbl:'Bitte Begründung eingeben:',
+    btnAnkunft:'Ankunft bestätigen',btnEnde:'Arbeitsende bestätigen',
+    btnAbw:'Abweichung speichern & abschließen',btnWeiter:'Abschließen & weiter',
+    btnFahrt:'Fahrt bestätigen',btnEdit:'Zeiten korrigieren',
+    abwTit:'Abweichung von Sollzeit',abwLbl:'Bitte Begründung eingeben:',
     abwPh:'z.B. Zusatzarbeiten angefordert, Objekt stärker verschmutzt ...',
-    fahrtTit:'Wohin fahren Sie jetzt?',
-    fahrtHeim:'Nach Hause',fahrtNext:'Nächstes Objekt',
-    tagFertigTit:'Tag abgeschlossen',
-    tagFertigSub:'Alle Aufträge erledigt. Gute Arbeit!',
-    nzTit:'Nebenzeiten diese Woche',
-    nzSub:'Lappen waschen · Material · Fahrzeugpflege',
-    kein:'Heute keine Aufträge geplant.',
-    laden:'Aufträge werden geladen...',
-    speichern:'Wird gespeichert...',
-    pflicht:'Bitte Begründung eingeben',
-    zielPflicht:'Bitte Fahrziel wählen',
-    fehler:'Verbindungsfehler — bitte neu laden',
+    fahrtTit:'Wohin fahren Sie jetzt?',fahrtHeim:'Nach Hause',fahrtNext:'Nächstes Objekt',
+    tagFertigTit:'Tag abgeschlossen',tagFertigSub:'Alle Aufträge erledigt. Gute Arbeit!',
+    nzTit:'Nebenzeiten diese Woche',nzSub:'Lappen waschen · Material · Fahrzeugpflege',
+    kein:'Heute keine Aufträge geplant.',laden:'Aufträge werden geladen...',
+    speichern:'Wird gespeichert...',pflicht:'Bitte Begründung eingeben',
+    zielPflicht:'Bitte Fahrziel wählen',fehler:'Verbindungsfehler',
+    editTitel:'Zeiten korrigieren',editHinweis:'Nur korrigieren wenn die Zeiten falsch erfasst wurden.',
+    editGrundPflicht:'Bitte Grund für die Korrektur angeben',
+    keinAuftrag:'Keine Aufträge',
   },
-  pl:{
-    auftraege:'Moje zlecenia na dziś',
+  pl:{heute:'Dziś',woche:'Ten tydzień',
     geplant:'Zaplanowane',aktiv:'W pracy',fertig:'Zakończone',
     aufgaben:'Zadania',erledigt:'ukończone',
     istBeginn:'Rzeczywisty początek',istEnde:'Rzeczywisty koniec',
-    btnAnkunft:'Potwierdź przybycie',
-    btnEnde:'Potwierdź koniec pracy',
-    btnAbw:'Zapisz odchylenie i zakończ',
-    btnWeiter:'Zakończ i kontynuuj',
-    btnFahrt:'Potwierdź przejazd',
-    abwTit:'Odchylenie od czasu planowanego',
-    abwLbl:'Proszę podać uzasadnienie:',
+    btnAnkunft:'Potwierdź przybycie',btnEnde:'Potwierdź koniec pracy',
+    btnAbw:'Zapisz odchylenie i zakończ',btnWeiter:'Zakończ i kontynuuj',
+    btnFahrt:'Potwierdź przejazd',btnEdit:'Koryguj czasy',
+    abwTit:'Odchylenie od czasu planowanego',abwLbl:'Proszę podać uzasadnienie:',
     abwPh:'np. dodatkowe prace zlecone, obiekt bardziej zabrudzony ...',
-    fahrtTit:'Dokąd teraz jedziesz?',
-    fahrtHeim:'Do domu',fahrtNext:'Następny obiekt',
-    tagFertigTit:'Dzień zakończony',
-    tagFertigSub:'Wszystkie zlecenia wykonane. Dobra robota!',
-    nzTit:'Czasy dodatkowe w tym tygodniu',
-    nzSub:'Pranie ścierek · Materiały · Pielęgnacja pojazdu',
-    kein:'Brak zaplanowanych zleceń na dziś.',
-    laden:'Ładowanie zleceń...',
-    speichern:'Zapisywanie...',
-    pflicht:'Proszę podać uzasadnienie',
-    zielPflicht:'Proszę wybrać cel podróży',
-    fehler:'Błąd połączenia — proszę odświeżyć',
+    fahrtTit:'Dokąd teraz jedziesz?',fahrtHeim:'Do domu',fahrtNext:'Następny obiekt',
+    tagFertigTit:'Dzień zakończony',tagFertigSub:'Wszystkie zlecenia wykonane. Dobra robota!',
+    nzTit:'Czasy dodatkowe w tym tygodniu',nzSub:'Pranie ścierek · Materiały · Pielęgnacja pojazdu',
+    kein:'Brak zaplanowanych zleceń na dziś.',laden:'Ładowanie zleceń...',
+    speichern:'Zapisywanie...',pflicht:'Proszę podać uzasadnienie',
+    zielPflicht:'Proszę wybrać cel podróży',fehler:'Błąd połączenia',
+    editTitel:'Koryguj czasy',editHinweis:'Koryguj tylko gdy czasy zostały błędnie zapisane.',
+    editGrundPflicht:'Proszę podać powód korekty',
+    keinAuftrag:'Brak zleceń',
   }
 }
 
 // ── STATE ─────────────────────────────────────────────────────
-let lang='de', curMa=null, tagFertig=false
-let auftraege=[], zeitIds={}, aufgabenChecked={}, auftragStep={}
-let nebenzeit=65 // Minuten/Woche — wird aus Supabase geladen
+let lang='de',curMa=null,tagFertig=false,curTab='heute'
+let auftraege=[],zeitIds={},aufgChecked={},aStep={},nebenzeit=65
+let wocheOffset=0,editAuftragIdx=null
+const TAGE_KURZ=['Mo','Di','Mi','Do','Fr','Sa','So']
 
 function t(k){return TX[lang][k]||TX.de[k]||k}
 function now(){return new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})}
+function toISO(d){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${day}`}
+function parseDatum(s){const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)}
 function toMin(s){if(!s)return 0;const[h,m]=s.split(':').map(Number);return h*60+m}
 function abwMin(se,ie){if(!se||!ie)return null;return toMin(ie)-toMin(se)}
-function toISO(d){
-  const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0')
-  return `${y}-${m}-${day}`
-}
-
-// ── INIT: Mitarbeiter laden ───────────────────────────────────
-async function initLogin() {
-  try {
-    const mas = await sbGet('mitarbeiter','aktiv=eq.true&order=nachname&select=id,nachname,vorname,sprache')
-    const sel = document.getElementById('l-ma')
-    mas.forEach(m => {
-      const opt = document.createElement('option')
-      opt.value = m.id
-      opt.textContent = m.nachname + (m.vorname ? ', '+m.vorname : '')
-      opt.dataset.spr = m.sprache || 'de'
-      sel.appendChild(opt)
-    })
-  } catch(e) {
-    // Fallback: Demo-Mitarbeiter falls keine Verbindung
-    document.getElementById('l-hint').textContent = 'Demo-PIN: 1234'
-  }
-}
+function getMonday(offset=0){const d=new Date();const day=d.getDay()||7;d.setDate(d.getDate()-day+1+offset*7);d.setHours(0,0,0,0);return d}
+function addDays(d,n){const r=new Date(d);r.setDate(r.getDate()+n);return r}
+function fmt(d){return d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'})}
+function getKW(d){const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));t.setUTCDate(t.getUTCDate()+4-(t.getUTCDay()||7));const y=t.getUTCFullYear();return Math.ceil(((t-new Date(Date.UTC(y,0,4)))/86400000+1)/7)}
 
 // ── LOGIN ─────────────────────────────────────────────────────
-async function login() {
-  const maId  = document.getElementById('l-ma').value
-  const pin   = document.getElementById('l-pin').value
-  const errEl = document.getElementById('l-err')
-  errEl.style.display = 'none'
+async function initLogin(){
+  try{
+    const mas=await sbGet('mitarbeiter','aktiv=eq.true&order=nachname&select=id,nachname,vorname,sprache')
+    const sel=document.getElementById('l-ma')
+    mas.forEach(m=>{const o=document.createElement('option');o.value=m.id;o.textContent=m.nachname+(m.vorname?', '+m.vorname:'');o.dataset.spr=m.sprache||'de';sel.appendChild(o)})
+  }catch(e){}
+}
 
-  if(!maId) { showErr(lang==='pl'?'Wybierz pracownika':'Bitte Mitarbeiter wählen'); return }
-  if(!pin || pin.length < 4) { showErr(lang==='pl'?'Wprowadź PIN':'Bitte PIN eingeben'); return }
-
-  // Ladeanimation während Prüfung
-  const btnEl = document.getElementById('l-btn')
-  btnEl.disabled = true
-  btnEl.innerHTML = '<div class="spinner" style="width:18px;height:18px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:8px"></div>'
-
-  try {
-    // PIN direkt gegen Supabase prüfen
-    const result = await sbGet('mitarbeiter',
-      `id=eq.${maId}&pin=eq.${pin}&aktiv=eq.true&select=id,nachname,vorname,sprache`)
-
-    btnEl.disabled = false
-    btnEl.innerHTML = lang==='pl'?'Zaloguj się':'Anmelden'
-
-    if(!result.length) {
-      showErr(lang==='pl'?'Nieprawidłowy PIN':'Falscher PIN')
-      return
-    }
-    const ma = result[0]
-    curMa = {
-      id:   ma.id,
-      name: (ma.vorname ? ma.vorname+' ' : '') + ma.nachname,
-      spr:  ma.sprache || 'de'
-    }
-  } catch(e) {
-    btnEl.disabled = false
-    btnEl.innerHTML = lang==='pl'?'Zaloguj się':'Anmelden'
-    showErr('Verbindungsfehler — bitte neu versuchen')
-    return
-  }
-
+async function login(){
+  const maId=document.getElementById('l-ma').value
+  const pin=document.getElementById('l-pin').value
+  document.getElementById('l-err').style.display='none'
+  if(!maId){showErr(lang==='pl'?'Wybierz pracownika':'Bitte Mitarbeiter wählen');return}
+  if(!pin||pin.length<4){showErr(lang==='pl'?'Wprowadź PIN':'Bitte PIN eingeben');return}
+  const btn=document.getElementById('l-btn')
+  btn.disabled=true;btn.innerHTML='<div class="spinner"></div>'
+  try{
+    const r=await sbGet('mitarbeiter',`id=eq.${maId}&pin=eq.${pin}&aktiv=eq.true&select=id,nachname,vorname,sprache`)
+    btn.disabled=false;btn.innerHTML=`<span>${lang==='pl'?'Zaloguj się':'Anmelden'}</span>`
+    if(!r.length){showErr(lang==='pl'?'Nieprawidłowy PIN':'Falscher PIN');return}
+    const ma=r[0]
+    curMa={id:ma.id,name:(ma.vorname?ma.vorname+' ':'')+ma.nachname,spr:ma.sprache||'de'}
+  }catch(e){btn.disabled=false;btn.innerHTML='<span>Anmelden</span>';showErr(t('fehler'));return}
   setLang(curMa.spr)
-  document.getElementById('login').style.display = 'none'
+  document.getElementById('login').style.display='none'
   document.getElementById('app').classList.add('show')
-  document.getElementById('tb-name').textContent = curMa.name
-  document.getElementById('tb-date').textContent =
-    new Date().toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'})
-
+  document.getElementById('tb-name').textContent=curMa.name
+  document.getElementById('tb-date').textContent=new Date().toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'})
   await ladeAuftraege()
 }
 
-function showErr(msg) {
-  const el = document.getElementById('l-err')
-  el.textContent = msg
-  el.style.display = 'block'
-}
+function showErr(msg){const el=document.getElementById('l-err');el.textContent=msg;el.style.display='block'}
 
-function logout() {
-  curMa = null; tagFertig = false
-  auftraege = []; zeitIds = {}; aufgabenChecked = {}; auftragStep = {}
-  document.getElementById('login').style.display = 'flex'
+function logout(){
+  curMa=null;tagFertig=false;auftraege=[];zeitIds={};aufgChecked={};aStep={}
+  document.getElementById('login').style.display='flex'
   document.getElementById('app').classList.remove('show')
-  document.getElementById('l-ma').value = ''
-  document.getElementById('l-pin').value = ''
-  document.getElementById('l-err').style.display = 'none'
+  document.getElementById('l-ma').value='';document.getElementById('l-pin').value=''
+  document.getElementById('l-err').style.display='none'
 }
 
-// ── AUFTRÄGE LADEN ────────────────────────────────────────────
-async function ladeAuftraege() {
-  document.getElementById('main').innerHTML =
-    `<div class="loading"><div class="spinner"></div><span>${t('laden')}</span></div>`
+// ── NAVIGATION ────────────────────────────────────────────────
+function setLang(l){
+  lang=l
+  document.getElementById('lb-de').className='lang-btn'+(l==='de'?' on':'')
+  document.getElementById('lb-pl').className='lang-btn'+(l==='pl'?' on':'')
+  document.getElementById('nav-heute-lbl').textContent=t('heute')
+  document.getElementById('nav-woche-lbl').textContent=t('woche')
+  document.getElementById('ios-pl').style.display=l==='pl'?'block':'none'
+  if(curMa)render()
+}
 
-  try {
-    const heute = toISO(new Date())
-    // Aufträge für diesen MA heute
-    const data = await sbGet('auftraege',
-      `mitarbeiter_id=eq.${curMa.id}&datum=eq.${heute}&order=soll_start&select=id,datum,soll_start,soll_ende,anmerkung,status,objekt_id`)
+function setTab(tab){
+  curTab=tab
+  document.getElementById('nav-heute').className='bnav-btn'+(tab==='heute'?' on':'')
+  document.getElementById('nav-woche').className='bnav-btn'+(tab==='woche'?' on':'')
+  render()
+}
 
-    // Objekte dazu laden
-    const objIds = [...new Set(data.map(a=>a.objekt_id))].join(',')
-    let objMap = {}
-    if(objIds) {
-      const objs = await sbGet('objekte', `id=in.(${objIds})&select=id,name,adresse,leistungsbeschreibung`)
-      objs.forEach(o => objMap[o.id] = o)
+// ── DATEN LADEN ───────────────────────────────────────────────
+async function ladeAuftraege(){
+  document.getElementById('main').innerHTML=`<div class="leer"><div class="spin2" style="width:28px;height:28px;margin:0 auto 12px"></div><p>${t('laden')}</p></div>`
+  try{
+    const heute=toISO(new Date())
+    // Lade Aufträge der nächsten 14 Tage + vergangene 7 Tage für Wochenansicht
+    const von=toISO(addDays(new Date(),-7))
+    const bis=toISO(addDays(new Date(),14))
+    const data=await sbGet('auftraege',`mitarbeiter_id=eq.${curMa.id}&datum=gte.${von}&datum=lte.${bis}&order=datum,soll_start&select=id,datum,soll_start,soll_ende,anmerkung,status,objekt_id`)
+    const objIds=[...new Set(data.map(a=>a.objekt_id))].join(',')
+    let objMap={}
+    if(objIds){const os=await sbGet('objekte',`id=in.(${objIds})&select=id,name,adresse,leistungsbeschreibung`);os.forEach(o=>objMap[o.id]=o)}
+    const aIds=data.map(a=>a.id).join(',')
+    let zeitMap={},aufgMap={}
+    if(aIds){
+      const z=await sbGet('zeiterfassung',`auftrag_id=in.(${aIds})&select=id,auftrag_id,ist_start,ist_ende,abweichung_minuten,abweichung_begruendung,fahrt_ziel`)
+      z.forEach(z=>zeitMap[z.auftrag_id]=z)
+      const ag=await sbGet('aufgaben',`auftrag_id=in.(${aIds})&order=reihenfolge&select=id,auftrag_id,beschreibung,erledigt`)
+      ag.forEach(a=>{if(!aufgMap[a.auftrag_id])aufgMap[a.auftrag_id]=[];aufgMap[a.auftrag_id].push(a)})
     }
-
-    // Bestehende Zeiterfassungen laden
-    const aIds = data.map(a=>a.id).join(',')
-    let zeitMap = {}
-    if(aIds) {
-      const zeiten = await sbGet('zeiterfassung', `auftrag_id=in.(${aIds})&select=id,auftrag_id,ist_start,ist_ende,abweichung_minuten,abweichung_begruendung,fahrt_ziel`)
-      zeiten.forEach(z => zeitMap[z.auftrag_id] = z)
-    }
-
-    // Aufgaben laden
-    let aufgMap = {}
-    if(aIds) {
-      const aufg = await sbGet('aufgaben', `auftrag_id=in.(${aIds})&order=reihenfolge&select=id,auftrag_id,beschreibung,erledigt`)
-      aufg.forEach(a => {
-        if(!aufgMap[a.auftrag_id]) aufgMap[a.auftrag_id] = []
-        aufgMap[a.auftrag_id].push(a)
-      })
-    }
-
-    // Nebenzeiten laden
-    try {
-      const nz = await sbGet('v_nebenzeiten_pro_ma', `mitarbeiter_id=eq.${curMa.id}&select=nebenzeit_min_pro_woche`)
-      if(nz.length) nebenzeit = nz[0].nebenzeit_min_pro_woche || 65
-    } catch(e) { nebenzeit = 65 }
-
-    // State aufbauen
-    auftraege = data.map(a => ({
-      ...a,
-      objekt: objMap[a.objekt_id] || {name:'Unbekannt',adresse:''},
-      aufgaben: aufgMap[a.id] || [],
-      zeit: zeitMap[a.id] || null,
-    }))
-
-    // Bestehende Steps wiederherstellen
-    auftraege.forEach((a,i) => {
-      const z = a.zeit
-      if(!z) {
-        auftragStep[i] = 0
-        aufgabenChecked[i] = []
-      } else if(!z.ist_ende) {
-        auftragStep[i] = 1
-        aufgabenChecked[i] = a.aufgaben.filter(ag=>ag.erledigt).map((_,ai)=>ai)
-      } else if(!z.fahrt_ziel) {
-        auftragStep[i] = 3
-        aufgabenChecked[i] = a.aufgaben.map((_,ai)=>ai)
-      } else {
-        auftragStep[i] = 4
-        aufgabenChecked[i] = a.aufgaben.map((_,ai)=>ai)
-      }
-      if(z) zeitIds[i] = z.id
+    try{const nz=await sbGet('v_nebenzeiten_pro_ma',`mitarbeiter_id=eq.${curMa.id}&select=nebenzeit_min_pro_woche`);if(nz.length)nebenzeit=nz[0].nebenzeit_min_pro_woche||65}catch(e){}
+    auftraege=data.map(a=>({...a,objekt:objMap[a.objekt_id]||{name:'?'},aufgaben:aufgMap[a.id]||[],zeit:zeitMap[a.id]||null}))
+    // Steps wiederherstellen
+    auftraege.forEach((a,i)=>{
+      const z=a.zeit
+      if(!z){aStep[i]=0;aufgChecked[i]=[]}
+      else if(!z.ist_ende){aStep[i]=1;aufgChecked[i]=a.aufgaben.filter(ag=>ag.erledigt).map((_,ai)=>ai)}
+      else if(!z.fahrt_ziel){aStep[i]=3;aufgChecked[i]=a.aufgaben.map((_,ai)=>ai)}
+      else{aStep[i]=4;aufgChecked[i]=a.aufgaben.map((_,ai)=>ai)}
+      if(z)zeitIds[i]=z.id
     })
-
-    tagFertig = auftraege.length > 0 && auftraege.every((_,i) => auftragStep[i] >= 4)
+    // Nur heutige Aufträge für tagFertig prüfen
+    const heuteAuftr=auftraege.filter(a=>a.datum===heute)
+    tagFertig=heuteAuftr.length>0&&heuteAuftr.every(a=>{const i=auftraege.indexOf(a);return aStep[i]>=4})
     render()
-
-  } catch(e) {
-    document.getElementById('main').innerHTML =
-      `<div class="leer"><i class="ti ti-wifi-off" aria-hidden="true"></i><p>${t('fehler')}</p><p style="font-size:12px;margin-top:8px;opacity:.6">${e.message}</p></div>`
+  }catch(e){
+    document.getElementById('main').innerHTML=`<div class="leer"><i class="ti ti-wifi-off" aria-hidden="true"></i><p>${t('fehler')}: ${e.message}</p></div>`
   }
 }
 
-// ── RENDER ────────────────────────────────────────────────────
-function render() {
-  const el = document.getElementById('main')
-  const nzH = Math.floor(nebenzeit/60), nzM = nebenzeit%60
-  const nzBanner = `<div class="nz-banner">
+// ── RENDER HAUPT ──────────────────────────────────────────────
+function render(){
+  if(curTab==='heute') renderHeute()
+  else renderWoche()
+}
+
+// ── HEUTE ─────────────────────────────────────────────────────
+function renderHeute(){
+  const heute=toISO(new Date())
+  const heuteAuftr=auftraege.filter(a=>a.datum===heute)
+  const nzH=Math.floor(nebenzeit/60),nzM=nebenzeit%60
+  const nzBanner=`<div class="nz-banner">
     <div class="nz-icon"><i class="ti ti-clock-plus" aria-hidden="true"></i></div>
-    <div><div class="nz-t">${t('nzTit')}</div><div class="nz-s">${t('nzSub')}</div></div>
+    <div style="flex:1"><div class="nz-t" style="font-size:13px;font-weight:500;margin-bottom:2px">${t('nzTit')}</div><div style="font-size:11px;color:var(--text2)">${t('nzSub')}</div></div>
     <div class="nz-pill">+${nzH>0?nzH+'h ':''}${nzM}min</div>
   </div>`
 
-  if(tagFertig) {
-    el.innerHTML = `
-      <div class="fertig-card">
-        <div class="fertig-icon"><i class="ti ti-circle-check" aria-hidden="true"></i></div>
-        <div class="fertig-tit">${t('tagFertigTit')}</div>
-        <div class="fertig-sub">${t('tagFertigSub')}</div>
-      </div>${nzBanner}`
+  if(tagFertig){
+    document.getElementById('main').innerHTML=`
+      <div class="fertig-card"><div class="fertig-icon"><i class="ti ti-circle-check" aria-hidden="true"></i></div>
+      <div class="fertig-tit">${t('tagFertigTit')}</div><div class="fertig-sub">${t('tagFertigSub')}</div></div>${nzBanner}`
     return
   }
-
-  if(!auftraege.length) {
-    el.innerHTML = `${nzBanner}<div class="leer"><i class="ti ti-calendar-off" aria-hidden="true"></i><p>${t('kein')}</p></div>`
+  if(!heuteAuftr.length){
+    document.getElementById('main').innerHTML=`${nzBanner}<div class="leer"><i class="ti ti-calendar-off" aria-hidden="true"></i><p>${t('kein')}</p></div>`
     return
   }
+  let html=`<div style="font-size:17px;font-weight:500;margin-bottom:12px">${t('heute')}</div>${nzBanner}<div class="a-list">`
+  heuteAuftr.forEach(a=>{html+=renderAuftragCard(a)})
+  html+=`</div>`
+  document.getElementById('main').innerHTML=html
+}
 
-  let html = `<div style="font-size:17px;font-weight:500;margin-bottom:12px">${t('auftraege')}</div>${nzBanner}<div class="a-list">`
+// ── WOCHE ─────────────────────────────────────────────────────
+function renderWoche(){
+  const mo=getMonday(wocheOffset)
+  const so=addDays(mo,6)
+  const heute=toISO(new Date())
+  let html=`<div class="wo-header">
+    <div class="wo-nav">
+      <button class="wo-navbtn" onclick="wocheOffset--;renderWoche()">&#8592;</button>
+      <div class="wo-label">KW ${getKW(mo)} · ${fmt(mo)}–${fmt(so)}</div>
+      <button class="wo-navbtn" onclick="wocheOffset++;renderWoche()">&#8594;</button>
+    </div>
+  </div><div class="wo-grid">`
 
-  auftraege.forEach((a,i) => {
-    const step = auftragStep[i] || 0
-    const checked = aufgabenChecked[i] || []
-    const z = a.zeit
-    const istStart = z?.ist_start || ''
-    const istEnde  = z?.ist_ende  || ''
-    const abw = abwMin(a.soll_ende, istEnde)
-    const brauchtBegr = abw !== null && Math.abs(abw) > 5
-    const fahrt = z?.fahrt_ziel || ''
+  for(let d=0;d<7;d++){
+    const dd=addDays(mo,d)
+    const dayStr=toISO(dd)
+    const istHeute=dayStr===heute
+    const dayAuftr=auftraege.filter(a=>a.datum===dayStr)
+    const h=dayAuftr.reduce((s,a)=>{const d=(toMin(a.soll_ende)-toMin(a.soll_start));return s+(d>0?d:0)},0)
 
-    const cardCls = step===0?'':(step>=4?'fertig':'aktiv')
-    const statusCls = step===0?'geplant':step>=4?'fertig':'aktiv'
-    const statusTxt = step===0?t('geplant'):step>=4?t('fertig'):t('aktiv')
-
-    html += `<div class="a-card ${cardCls}">
-      <div class="a-head">
-        <div class="a-obj">${a.objekt.name}</div>
-        ${a.objekt.adresse?`<div class="a-adr"><i class="ti ti-map-pin" style="font-size:12px" aria-hidden="true"></i> ${a.objekt.adresse}</div>`:''}
-        <div class="a-meta">
-          <span class="pill soll"><i class="ti ti-clock" style="font-size:12px" aria-hidden="true"></i>${a.soll_start||''}${a.soll_ende?'–'+a.soll_ende:''}</span>
-          <span class="pill ${statusCls}">${statusTxt}</span>
-        </div>
+    html+=`<div class="wo-tag">
+      <div class="wo-tag-hdr ${istHeute?'heute':''}">
+        <div class="wo-tag-datum ${istHeute?'heute':''}">${TAGE_KURZ[d]}, ${fmt(dd)}${istHeute?' (Heute)':''}</div>
+        <div class="wo-tag-info">${dayAuftr.length?`${dayAuftr.length} Auftr. · ${(h/60).toFixed(1)}h`:'—'}</div>
       </div>`
 
-    // Aufgaben
-    if(step >= 1 && a.aufgaben.length) {
-      const pct = Math.round(checked.length/a.aufgaben.length*100)
-      html += `<div class="a-aufg">
-        <div class="a-aufg-hdr"><span>${t('aufgaben')}</span><span>${checked.length}/${a.aufgaben.length} ${t('erledigt')}</span></div>
-        <div class="prog"><div class="prog-fill" style="width:${pct}%"></div></div>`
-      a.aufgaben.forEach((aufg,ai) => {
-        const done = checked.includes(ai)
-        html += `<div class="aufg-item ${done?'done':''}" onclick="toggleAufg(${i},${ai})">
-          <div class="chk">${done?'<i class="ti ti-check" style="font-size:12px" aria-hidden="true"></i>':''}</div>
-          <span class="aufg-txt">${aufg.beschreibung}</span>
+    if(dayAuftr.length){
+      html+=`<div class="wo-auftraege">`
+      dayAuftr.forEach(a=>{
+        const i=auftraege.indexOf(a)
+        const step=aStep[i]||0
+        const statusFarbe=step>=4?'var(--green)':step>=1?'var(--blue)':'var(--text3)'
+        const statusLabel=step>=4?t('fertig'):step>=1?t('aktiv'):t('geplant')
+        html+=`<div class="wo-chip" onclick="wocheZuHeute('${a.datum}',${i})">
+          <div class="wo-chip-dot" style="background:${statusFarbe}"></div>
+          <div style="flex:1">
+            <div class="wo-chip-obj">${a.objekt.name}</div>
+            <div class="wo-chip-zeit">${a.soll_start||''}${a.soll_ende?'–'+a.soll_ende:''}</div>
+          </div>
+          <span class="wo-chip-status" style="background:${step>=4?'var(--green-bg)':step>=1?'var(--blue-bg)':'var(--bg3)'};color:${step>=4?'var(--green-text)':step>=1?'var(--blue-text)':'var(--text3)'}">${statusLabel}</span>
         </div>`
       })
-      html += `</div>`
-    } else if(step >= 1 && !a.aufgaben.length && a.anmerkung) {
-      html += `<div class="a-aufg"><div style="font-size:13px;color:var(--text2);padding:4px 0">${a.anmerkung}</div></div>`
-    }
-
-    // Zeiten
-    if(step >= 1) {
-      html += `<div class="a-zeiten">
-        <div class="z-box"><div class="z-lbl">${t('istBeginn')}</div><div class="z-val ${istStart?'':'leer'}">${istStart||'—'}</div></div>
-        <div class="z-box"><div class="z-lbl">${t('istEnde')}</div><div class="z-val ${istEnde?'':'leer'}">${istEnde||'—'}</div></div>
-      </div>`
-    }
-
-    // Abweichung
-    if(step === 2 && brauchtBegr) {
-      html += `<div class="abw">
-        <div class="abw-hdr"><i class="ti ti-alert-triangle" aria-hidden="true"></i>${t('abwTit')}</div>
-        <div class="abw-diff">${abw>0?'+':''}${abw} min (Soll-Ende: ${a.soll_ende})</div>
-        <div class="abw-lbl">${t('abwLbl')}</div>
-        <textarea id="begr-${i}" placeholder="${t('abwPh')}">${z?.abweichung_begruendung||''}</textarea>
-      </div>`
-    }
-
-    // Fahrt
-    if(step === 3) {
-      html += `<div class="fahrt">
-        <div class="fahrt-tit">${t('fahrtTit')}</div>
-        <div class="fahrt-opts">
-          <div class="f-opt ${fahrt==='heim'?'on':''}" onclick="setFahrt(${i},'heim')">
-            <i class="ti ti-home" aria-hidden="true"></i><span>${t('fahrtHeim')}</span>
-          </div>
-          <div class="f-opt ${fahrt==='next'?'on':''}" onclick="setFahrt(${i},'next')">
-            <i class="ti ti-building" aria-hidden="true"></i><span>${t('fahrtNext')}</span>
-          </div>
-        </div>
-      </div>`
-    }
-
-    // Button
-    html += `<div class="a-btn" id="btn-area-${i}">`
-    if(step === 0) {
-      html += `<button class="mbtn blue" onclick="nextStep(${i})"><i class="ti ti-map-pin" aria-hidden="true"></i>${t('btnAnkunft')}</button>`
-    } else if(step === 1) {
-      html += `<button class="mbtn ${checked.length===a.aufgaben.length||!a.aufgaben.length?'green':'gray'}" onclick="nextStep(${i})"><i class="ti ti-clock-check" aria-hidden="true"></i>${t('btnEnde')}</button>`
-    } else if(step === 2) {
-      html += `<button class="mbtn green" onclick="nextStep(${i})"><i class="ti ti-device-floppy" aria-hidden="true"></i>${brauchtBegr?t('btnAbw'):t('btnWeiter')}</button>`
-    } else if(step === 3) {
-      html += `<button class="mbtn blue" onclick="nextStep(${i})"><i class="ti ti-navigation" aria-hidden="true"></i>${t('btnFahrt')}</button>`
+      html+=`</div>`
     } else {
-      html += `<button class="mbtn gray" disabled><i class="ti ti-circle-check" aria-hidden="true"></i>${t('fertig')}</button>`
+      html+=`<div class="wo-leer">${t('keinAuftrag')}</div>`
     }
-    html += `</div></div>` // a-btn + a-card
-  })
+    html+=`</div>`
+  }
+  html+=`</div>`
+  document.getElementById('main').innerHTML=html
+}
 
-  html += `</div>`
-  el.innerHTML = html
+function wocheZuHeute(datum, auftragIdx){
+  // Zum Heute-Tab wechseln und scrollen — oder wenn anderer Tag, Info anzeigen
+  const heute=toISO(new Date())
+  if(datum===heute){
+    setTab('heute')
+    setTimeout(()=>{
+      const cards=document.querySelectorAll('.a-card')
+      if(cards[auftragIdx])cards[auftragIdx].scrollIntoView({behavior:'smooth',block:'start'})
+    },100)
+  } else {
+    // Anderer Tag: kurz Info zeigen
+    alert(`Auftrag am ${datum.split('-').reverse().join('.')}\n${auftraege[auftragIdx]?.objekt?.name||''}\n${auftraege[auftragIdx]?.soll_start||''}–${auftraege[auftragIdx]?.soll_ende||''}`)
+  }
+}
+
+// ── AUFTRAG KARTE ─────────────────────────────────────────────
+function renderAuftragCard(a){
+  const i=auftraege.indexOf(a)
+  const step=aStep[i]||0
+  const checked=aufgChecked[i]||[]
+  const z=a.zeit
+  const istStart=z?.ist_start||''
+  const istEnde=z?.ist_ende||''
+  const abw=abwMin(a.soll_ende,istEnde)
+  const brauchtBegr=abw!==null&&Math.abs(abw)>5
+  const fahrt=z?.fahrt_ziel||''
+  const cardCls=step===0?'':(step>=4?'fertig':'aktiv')
+  const statusCls=step===0?'geplant':step>=4?'fertig':'aktiv'
+  const statusTxt=step===0?t('geplant'):step>=4?t('fertig'):t('aktiv')
+
+  let html=`<div class="a-card ${cardCls}">
+    <div class="a-head">
+      <div class="a-obj">${a.objekt.name}</div>
+      ${a.objekt.adresse?`<div class="a-adr"><i class="ti ti-map-pin" style="font-size:12px" aria-hidden="true"></i> ${a.objekt.adresse}</div>`:''}
+      <div class="a-meta">
+        <span class="pill soll"><i class="ti ti-clock" style="font-size:12px" aria-hidden="true"></i>${a.soll_start||''}${a.soll_ende?'–'+a.soll_ende:''}</span>
+        <span class="pill ${statusCls}">${statusTxt}</span>
+      </div>
+    </div>`
+
+  // Aufgaben
+  if(step>=1&&a.aufgaben.length){
+    const pct=Math.round(checked.length/a.aufgaben.length*100)
+    html+=`<div class="a-aufg">
+      <div class="a-aufg-hdr"><span>${t('aufgaben')}</span><span>${checked.length}/${a.aufgaben.length} ${t('erledigt')}</span></div>
+      <div class="prog"><div class="prog-fill" style="width:${pct}%"></div></div>`
+    a.aufgaben.forEach((ag,ai)=>{
+      const done=checked.includes(ai)
+      // Bei fertigem Auftrag (step>=4) trotzdem anzeigen aber nicht klickbar
+      html+=`<div class="aufg-item ${done?'done':''}" ${step<4?`onclick="toggleAufg(${i},${ai})"`:''}>
+        <div class="chk">${done?'<i class="ti ti-check" style="font-size:12px" aria-hidden="true"></i>':''}</div>
+        <span class="aufg-txt">${ag.beschreibung}</span>
+      </div>`
+    })
+    html+=`</div>`
+  }
+
+  // Zeiten
+  if(step>=1){
+    html+=`<div class="a-zeiten">
+      <div class="z-box"><div class="z-lbl">${t('istBeginn')}</div><div class="z-val ${istStart?'':'leer'}">${istStart||'—'}</div></div>
+      <div class="z-box"><div class="z-lbl">${t('istEnde')}</div><div class="z-val ${istEnde?'':'leer'}">${istEnde||'—'}</div></div>
+    </div>`
+  }
+
+  // Abweichung
+  if(step===2&&brauchtBegr){
+    html+=`<div class="abw">
+      <div class="abw-hdr"><i class="ti ti-alert-triangle" aria-hidden="true"></i>${t('abwTit')}</div>
+      <div class="abw-diff">${abw>0?'+':''}${abw} min (Soll-Ende: ${a.soll_ende})</div>
+      <div class="abw-lbl">${t('abwLbl')}</div>
+      <textarea id="begr-${i}" placeholder="${t('abwPh')}">${z?.abweichung_begruendung||''}</textarea>
+    </div>`
+  }
+
+  // Fahrt
+  if(step===3){
+    html+=`<div class="fahrt">
+      <div class="fahrt-tit">${t('fahrtTit')}</div>
+      <div class="fahrt-opts">
+        <div class="f-opt ${fahrt==='heim'?'on':''}" onclick="setFahrt(${i},'heim')">
+          <i class="ti ti-home" aria-hidden="true"></i><span>${t('fahrtHeim')}</span>
+        </div>
+        <div class="f-opt ${fahrt==='next'?'on':''}" onclick="setFahrt(${i},'next')">
+          <i class="ti ti-building" aria-hidden="true"></i><span>${t('fahrtNext')}</span>
+        </div>
+      </div>
+    </div>`
+  }
+
+  // Buttons
+  html+=`<div class="a-btn" id="btn-area-${i}">`
+  if(step===0){
+    html+=`<button class="mbtn blue" onclick="nextStep(${i})"><i class="ti ti-map-pin" aria-hidden="true"></i>${t('btnAnkunft')}</button>`
+  }else if(step===1){
+    html+=`<button class="mbtn ${checked.length===a.aufgaben.length||!a.aufgaben.length?'green':'gray'}" onclick="nextStep(${i})"><i class="ti ti-clock-check" aria-hidden="true"></i>${t('btnEnde')}</button>`
+  }else if(step===2){
+    html+=`<button class="mbtn green" onclick="nextStep(${i})"><i class="ti ti-device-floppy" aria-hidden="true"></i>${brauchtBegr?t('btnAbw'):t('btnWeiter')}</button>`
+  }else if(step===3){
+    html+=`<button class="mbtn blue" onclick="nextStep(${i})"><i class="ti ti-navigation" aria-hidden="true"></i>${t('btnFahrt')}</button>`
+  }else{
+    // FERTIG — Edit-Button anzeigen
+    html+=`<div style="display:flex;flex-direction:column;gap:8px">
+      <button class="mbtn gray" disabled><i class="ti ti-circle-check" aria-hidden="true"></i>${t('fertig')}</button>
+      <button class="mbtn orange" onclick="openEditModal(${i})"><i class="ti ti-edit" aria-hidden="true"></i>${t('btnEdit')}</button>
+    </div>`
+  }
+  html+=`</div></div>`
+  return html
 }
 
 // ── AKTIONEN ─────────────────────────────────────────────────
-async function toggleAufg(ai, ti) {
-  const step = auftragStep[ai] || 0
-  if(step < 1) return
-  const checked = aufgabenChecked[ai] || []
-  const idx = checked.indexOf(ti)
-  if(idx >= 0) checked.splice(idx,1); else checked.push(ti)
-  aufgabenChecked[ai] = checked
-
-  // Aufgabe in Supabase als erledigt markieren
-  const aufg = auftraege[ai].aufgaben[ti]
-  if(aufg?.id) {
-    try {
-      await sbPatch('aufgaben', aufg.id, {erledigt: checked.includes(ti), erledigt_um: checked.includes(ti) ? new Date().toISOString() : null})
-    } catch(e) { console.warn('Aufgabe konnte nicht gespeichert werden', e) }
+async function toggleAufg(ai,ti){
+  const step=aStep[ai]||0;if(step<1||step>=4)return
+  const checked=aufgChecked[ai]||[]
+  const idx=checked.indexOf(ti)
+  if(idx>=0)checked.splice(idx,1);else checked.push(ti)
+  aufgChecked[ai]=checked
+  const ag=auftraege[ai].aufgaben[ti]
+  if(ag?.id){
+    try{await sbPatch('aufgaben',ag.id,{erledigt:checked.includes(ti),erledigt_um:checked.includes(ti)?new Date().toISOString():null})}catch(e){}
   }
   render()
 }
 
-function setFahrt(ai, ziel) {
-  if(!auftraege[ai].zeit) auftraege[ai].zeit = {}
-  auftraege[ai].zeit.fahrt_ziel = ziel
-  render()
+function setFahrt(ai,ziel){
+  if(!auftraege[ai].zeit)auftraege[ai].zeit={}
+  auftraege[ai].zeit.fahrt_ziel=ziel;render()
 }
 
-async function nextStep(ai) {
-  const a    = auftraege[ai]
-  const step = auftragStep[ai] || 0
-  const abw  = abwMin(a.soll_ende, a.zeit?.ist_ende)
-  const brauchtBegr = abw !== null && Math.abs(abw) > 5
-  const btnArea = document.getElementById('btn-area-'+ai)
+async function nextStep(ai){
+  const a=auftraege[ai],step=aStep[ai]||0
+  const abw=abwMin(a.soll_ende,a.zeit?.ist_ende)
+  const brauchtBegr=abw!==null&&Math.abs(abw)>5
+  const btnArea=document.getElementById('btn-area-'+ai)
+  function setSaving(){if(btnArea)btnArea.innerHTML=`<div class="saving"><div class="spin2"></div><span>${t('speichern')}</span></div>`}
 
-  function setSaving() {
-    if(btnArea) btnArea.innerHTML = `<div class="saving"><div class="spinner" style="width:18px;height:18px"></div><span>${t('speichern')}</span></div>`
+  if(step===0){
+    setSaving()
+    try{
+      const istStart=now()
+      const res=await sbPost('zeiterfassung',{auftrag_id:a.id,ist_start:istStart})
+      zeitIds[ai]=res[0].id
+      if(!auftraege[ai].zeit)auftraege[ai].zeit={}
+      auftraege[ai].zeit.ist_start=istStart;auftraege[ai].zeit.id=res[0].id
+      await sbPatch('auftraege',a.id,{status:'aktiv'})
+      aStep[ai]=1
+    }catch(e){alert(t('fehler')+': '+e.message);await ladeAuftraege();return}
+  }else if(step===1){
+    setSaving()
+    try{
+      const istEnde=now()
+      const abwNeu=abwMin(a.soll_ende,istEnde)
+      if(!auftraege[ai].zeit)auftraege[ai].zeit={}
+      auftraege[ai].zeit.ist_ende=istEnde;auftraege[ai].zeit.abweichung_minuten=abwNeu
+      await sbPatch('zeiterfassung',zeitIds[ai],{ist_ende:istEnde,abweichung_minuten:abwNeu})
+      aStep[ai]=(abwNeu&&Math.abs(abwNeu)>5)?2:3
+    }catch(e){alert(t('fehler')+': '+e.message);return}
+  }else if(step===2){
+    const ta=document.getElementById('begr-'+ai)
+    const begr=ta?ta.value.trim():''
+    if(!begr){if(ta){ta.classList.add('err');ta.focus()};alert(t('pflicht'));return}
+    setSaving()
+    try{
+      await sbPatch('zeiterfassung',zeitIds[ai],{abweichung_begruendung:begr})
+      if(!auftraege[ai].zeit)auftraege[ai].zeit={}
+      auftraege[ai].zeit.abweichung_begruendung=begr;aStep[ai]=3
+    }catch(e){alert(t('fehler')+': '+e.message);return}
+  }else if(step===3){
+    const fahrt=auftraege[ai].zeit?.fahrt_ziel
+    if(!fahrt){alert(t('zielPflicht'));return}
+    setSaving()
+    try{
+      await sbPatch('zeiterfassung',zeitIds[ai],{fahrt_ziel:fahrt,fahrt_start:now()})
+      await sbPatch('auftraege',a.id,{status:'abgeschlossen'})
+      aStep[ai]=4
+      const heute=toISO(new Date())
+      const heuteAuftr=auftraege.filter(a=>a.datum===heute)
+      if(heuteAuftr.every(a=>{const i=auftraege.indexOf(a);return aStep[i]>=4}))tagFertig=true
+    }catch(e){alert(t('fehler')+': '+e.message);return}
   }
-
-  if(step === 0) {
-    // Ankunft — Zeiterfassung anlegen
-    setSaving()
-    try {
-      const istStart = now()
-      const res = await sbPost('zeiterfassung', {
-        auftrag_id: a.id,
-        ist_start: istStart,
-      })
-      zeitIds[ai] = res[0].id
-      if(!auftraege[ai].zeit) auftraege[ai].zeit = {}
-      auftraege[ai].zeit.ist_start = istStart
-      auftraege[ai].zeit.id = res[0].id
-      // Auftrag auf aktiv setzen
-      await sbPatch('auftraege', a.id, {status:'aktiv'})
-      auftragStep[ai] = 1
-    } catch(e) { alert(t('fehler')+': '+e.message); ladeAuftraege(); return }
-
-  } else if(step === 1) {
-    // Arbeitsende
-    setSaving()
-    try {
-      const istEnde = now()
-      const abwNeu = abwMin(a.soll_ende, istEnde)
-      if(!auftraege[ai].zeit) auftraege[ai].zeit = {}
-      auftraege[ai].zeit.ist_ende = istEnde
-      auftraege[ai].zeit.abweichung_minuten = abwNeu
-
-      await sbPatch('zeiterfassung', zeitIds[ai], {
-        ist_ende: istEnde,
-        abweichung_minuten: abwNeu,
-      })
-      auftragStep[ai] = (abwNeu && Math.abs(abwNeu) > 5) ? 2 : 3
-    } catch(e) { alert(t('fehler')+': '+e.message); return }
-
-  } else if(step === 2) {
-    // Begründung speichern
-    const ta = document.getElementById('begr-'+ai)
-    const begr = ta ? ta.value.trim() : ''
-    if(!begr) { if(ta){ta.classList.add('err');ta.focus()} alert(t('pflicht')); return }
-    setSaving()
-    try {
-      await sbPatch('zeiterfassung', zeitIds[ai], {abweichung_begruendung: begr})
-      if(!auftraege[ai].zeit) auftraege[ai].zeit = {}
-      auftraege[ai].zeit.abweichung_begruendung = begr
-      auftragStep[ai] = 3
-    } catch(e) { alert(t('fehler')+': '+e.message); return }
-
-  } else if(step === 3) {
-    // Fahrt bestätigen
-    const fahrt = auftraege[ai].zeit?.fahrt_ziel
-    if(!fahrt) { alert(t('zielPflicht')); return }
-    setSaving()
-    try {
-      await sbPatch('zeiterfassung', zeitIds[ai], {fahrt_ziel: fahrt, fahrt_start: now()})
-      await sbPatch('auftraege', a.id, {status:'abgeschlossen'})
-      auftragStep[ai] = 4
-      if(auftraege.every((_,i) => auftragStep[i] >= 4)) tagFertig = true
-    } catch(e) { alert(t('fehler')+': '+e.message); return }
-  }
-
-  render()
-  window.scrollTo({top:0,behavior:'smooth'})
+  render();window.scrollTo({top:0,behavior:'smooth'})
 }
 
-// ── SPRACHE ───────────────────────────────────────────────────
-function setLang(l) {
-  lang = l
-  document.getElementById('lb-de').className = 'lang-btn'+(l==='de'?' on':'')
-  document.getElementById('lb-pl').className = 'lang-btn'+(l==='pl'?' on':'')
-  if(curMa) render()
+// ── EDIT MODAL ────────────────────────────────────────────────
+function openEditModal(ai){
+  editAuftragIdx=ai
+  const a=auftraege[ai],z=a.zeit
+  document.getElementById('edit-titel').textContent=t('editTitel')+': '+a.objekt.name
+  document.getElementById('edit-hinweis').textContent=t('editHinweis')
+  document.getElementById('edit-start').value=z?.ist_start||''
+  document.getElementById('edit-ende').value=z?.ist_ende||''
+  document.getElementById('edit-begr').value=''
+  document.getElementById('edit-modal').classList.add('open')
 }
 
-// ── START ─────────────────────────────────────────────────────
-document.getElementById('l-pin').addEventListener('keydown', e => { if(e.key==='Enter') login() })
+function closeEditModal(){
+  document.getElementById('edit-modal').classList.remove('open')
+  editAuftragIdx=null
+}
+
+async function saveEdit(){
+  if(editAuftragIdx===null)return
+  const begr=document.getElementById('edit-begr').value.trim()
+  if(!begr){alert(t('editGrundPflicht'));document.getElementById('edit-begr').focus();return}
+  const istStart=document.getElementById('edit-start').value
+  const istEnde=document.getElementById('edit-ende').value
+  const a=auftraege[editAuftragIdx]
+  const abwNeu=abwMin(a.soll_ende,istEnde)
+  try{
+    await sbPatch('zeiterfassung',zeitIds[editAuftragIdx],{
+      ist_start:istStart||null,
+      ist_ende:istEnde||null,
+      abweichung_minuten:abwNeu,
+      abweichung_begruendung:begr+' [Korrektur]'
+    })
+    if(!auftraege[editAuftragIdx].zeit)auftraege[editAuftragIdx].zeit={}
+    auftraege[editAuftragIdx].zeit.ist_start=istStart
+    auftraege[editAuftragIdx].zeit.ist_ende=istEnde
+    auftraege[editAuftragIdx].zeit.abweichung_minuten=abwNeu
+    auftraege[editAuftragIdx].zeit.abweichung_begruendung=begr+' [Korrektur]'
+    closeEditModal();render()
+  }catch(e){alert(t('fehler')+': '+e.message)}
+}
 
 // ── PWA INSTALL ───────────────────────────────────────────────
-let deferredPrompt = null
-const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent)
-const isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true
-
-if(!isStandalone) {
-  if(isIOS) {
-    setTimeout(() => document.getElementById('ios-hint').classList.add('show'), 2000)
-  } else {
-    window.addEventListener('beforeinstallprompt', e => {
-      e.preventDefault()
-      deferredPrompt = e
-      document.getElementById('install-banner').classList.add('show')
-    })
-  }
+let deferredPrompt=null
+const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent)
+const isStandalone=window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true
+if(!isStandalone){
+  if(isIOS){setTimeout(()=>document.getElementById('ios-hint').classList.add('show'),2500)}
+  else{window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;document.getElementById('install-banner').classList.add('show')})}
 }
-async function doInstall() {
-  if(!deferredPrompt) return
-  deferredPrompt.prompt()
-  await deferredPrompt.userChoice
-  deferredPrompt = null
-  document.getElementById('install-banner').classList.remove('show')
-}
-function closeInstall() { document.getElementById('install-banner').classList.remove('show') }
-function closeIosHint()  { document.getElementById('ios-hint').classList.remove('show') }
+async function doInstall(){if(!deferredPrompt)return;deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;document.getElementById('install-banner').classList.remove('show')}
+function closeInstall(){document.getElementById('install-banner').classList.remove('show')}
 
-// Polnische iOS-Anleitung einblenden wenn Sprache PL
-function updateIosHintLang() {
-  document.getElementById('ios-hint-pl').style.display = lang === 'pl' ? 'block' : 'none'
-}
-
+// Modal außen schließen
+document.getElementById('edit-modal').addEventListener('click',e=>{if(e.target.id==='edit-modal')closeEditModal()})
+document.getElementById('l-pin').addEventListener('keydown',e=>{if(e.key==='Enter')login()})
 initLogin()
 </script>
 </body>
