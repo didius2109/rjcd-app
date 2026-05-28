@@ -160,7 +160,7 @@
     <button class="btn-login" id="l-btn" onclick="login()">
       <span id="l-btn-txt">Anmelden</span>
     </button>
-    <div class="login-hint" id="l-hint">PIN: Ihr persönlicher 4-stelliger Code</div>
+    <div class="login-hint" id="l-hint">Bitte persönlichen PIN eingeben</div>
     <div class="err-box" id="l-err"></div>
   </div>
 </div>
@@ -301,16 +301,38 @@ async function login() {
   const errEl = document.getElementById('l-err')
   errEl.style.display = 'none'
 
-  if(!maId) { showErr('Bitte Mitarbeiter wählen'); return }
-  if(!pin || pin.length < 4) { showErr('Bitte PIN eingeben'); return }
+  if(!maId) { showErr(lang==='pl'?'Wybierz pracownika':'Bitte Mitarbeiter wählen'); return }
+  if(!pin || pin.length < 4) { showErr(lang==='pl'?'Wprowadź PIN':'Bitte PIN eingeben'); return }
 
-  // PIN-Prüfung: in Supabase mitarbeiter-Tabelle pin-Feld prüfen
-  // Demo: PIN 1234 für alle — echte PINs werden im nächsten Schritt eingerichtet
-  if(pin !== '1234') { showErr(lang==='pl'?'Nieprawidłowy PIN':'Falscher PIN'); return }
+  // Ladeanimation während Prüfung
+  const btnEl = document.getElementById('l-btn')
+  btnEl.disabled = true
+  btnEl.innerHTML = '<div class="spinner" style="width:18px;height:18px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:8px"></div>'
 
-  const sel = document.getElementById('l-ma')
-  const opt = sel.options[sel.selectedIndex]
-  curMa = {id: maId, name: opt.textContent, spr: opt.dataset.spr || 'de'}
+  try {
+    // PIN direkt gegen Supabase prüfen
+    const result = await sbGet('mitarbeiter',
+      `id=eq.${maId}&pin=eq.${pin}&aktiv=eq.true&select=id,nachname,vorname,sprache`)
+
+    btnEl.disabled = false
+    btnEl.innerHTML = lang==='pl'?'Zaloguj się':'Anmelden'
+
+    if(!result.length) {
+      showErr(lang==='pl'?'Nieprawidłowy PIN':'Falscher PIN')
+      return
+    }
+    const ma = result[0]
+    curMa = {
+      id:   ma.id,
+      name: (ma.vorname ? ma.vorname+' ' : '') + ma.nachname,
+      spr:  ma.sprache || 'de'
+    }
+  } catch(e) {
+    btnEl.disabled = false
+    btnEl.innerHTML = lang==='pl'?'Zaloguj się':'Anmelden'
+    showErr('Verbindungsfehler — bitte neu versuchen')
+    return
+  }
 
   setLang(curMa.spr)
   document.getElementById('login').style.display = 'none'
