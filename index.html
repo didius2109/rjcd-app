@@ -215,12 +215,27 @@
     </div>
 
     <div id="view-mitarbeiter">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-        <div style="font-size:16px;font-weight:500">Mitarbeiter</div>
-        <button class="btn-primary" onclick="openMaModal(null)"><i class="ti ti-plus"></i> Neu</button>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+        <div>
+          <div style="font-size:16px;font-weight:500">Mitarbeiter</div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <div style="display:flex;gap:2px;background:var(--bg3);border-radius:var(--radius);padding:3px">
+            <button class="vt-btn active" id="ma-tab-liste" onclick="setMaTab('liste')">Übersicht</button>
+            <button class="vt-btn" id="ma-tab-nz" onclick="setMaTab('nz')">Nebenzeiten</button>
+          </div>
+          <button class="btn-primary" id="ma-neu-btn" onclick="openMaModal(null)"><i class="ti ti-plus"></i> Neu</button>
+        </div>
       </div>
-      <div class="card-grid" id="ma-grid">
-        <div class="loading"><div class="spinner"></div> Lade Mitarbeiter...</div>
+      <!-- Mitarbeiterliste -->
+      <div id="ma-tab-inhalt-liste">
+        <div class="card-grid" id="ma-grid">
+          <div class="loading"><div class="spinner"></div> Lade Mitarbeiter...</div>
+        </div>
+      </div>
+      <!-- Nebenzeiten -->
+      <div id="ma-tab-inhalt-nz" style="display:none">
+        <div id="nz-inhalt"><div class="loading"><div class="spinner"></div> Lade Nebenzeiten...</div></div>
       </div>
     </div>
 
@@ -763,7 +778,197 @@ async function deleteObj() {
   } catch(e) { alert('Fehler: ' + e.message) }
 }
 
-// ── NAVIGATION ────────────────────────────────────────────────
+// ── MITARBEITER TABS ──────────────────────────────────────────
+let curMaTab = 'liste'
+
+function setMaTab(tab) {
+  curMaTab = tab
+  document.getElementById('ma-tab-inhalt-liste').style.display = tab==='liste' ? 'block' : 'none'
+  document.getElementById('ma-tab-inhalt-nz').style.display    = tab==='nz'    ? 'block' : 'none'
+  document.getElementById('ma-neu-btn').style.display          = tab==='liste' ? 'flex'  : 'none'
+  document.getElementById('ma-tab-liste').className = 'vt-btn' + (tab==='liste'?' active':'')
+  document.getElementById('ma-tab-nz').className    = 'vt-btn' + (tab==='nz'   ?' active':'')
+  if(tab === 'nz') ladeNebenzeiten()
+}
+
+// ── NEBENZEITEN ───────────────────────────────────────────────
+let nzPauschalen = []   // [{id, bezeichnung, label, minuten_pro_woche}]
+let nzMaConfig   = []   // [{id, mitarbeiter_id, pauschale_id, aktiv, abweichung_minuten}]
+
+async function ladeNebenzeiten() {
+  document.getElementById('nz-inhalt').innerHTML =
+    '<div class="loading"><div class="spinner"></div> Lade Nebenzeiten...</div>'
+  try {
+    nzPauschalen = await sbGet('nebenzeiten_pauschalen', 'aktiv=eq.true&order=bezeichnung')
+    nzMaConfig   = await sbGet('nebenzeiten_ma', 'select=id,mitarbeiter_id,pauschale_id,aktiv,abweichung_minuten')
+    renderNebenzeiten()
+  } catch(e) {
+    document.getElementById('nz-inhalt').innerHTML =
+      `<div style="color:var(--red-text);font-size:13px;padding:16px;background:var(--red-bg);border-radius:var(--radius-lg)">
+        Nebenzeiten-Tabellen noch nicht angelegt.<br>
+        <small>Bitte <strong>rjcd_nebenzeiten_update.sql</strong> in Supabase ausführen.</small>
+      </div>`
+  }
+}
+
+function renderNebenzeiten() {
+  const el = document.getElementById('nz-inhalt')
+
+  // Pauschalen-Karten oben
+  let html = `
+    <div style="font-size:13px;color:var(--text2);margin-bottom:12px;padding:10px 14px;background:var(--green-bg);border-radius:var(--radius-lg);border:0.5px solid rgba(29,158,117,0.2)">
+      <i class="ti ti-info-circle" style="font-size:13px;vertical-align:-2px" aria-hidden="true"></i>
+      Nebenzeiten werden wöchentlich zur Arbeitszeit addiert und erscheinen im Arbeitszeitnachweis.
+    </div>
+    <div style="font-size:13px;font-weight:500;margin-bottom:10px">Pauschalen (Minuten pro Woche)</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:20px">`
+
+  const icons = {lappen_waschen:'ti-wash', material:'ti-package', fahrzeugpflege:'ti-car'}
+  const farben = {lappen_waschen:'#E1F5EE', material:'#E6F1FB', fahrzeugpflege:'#FAEEDA'}
+  const textfarben = {lappen_waschen:'#085041', material:'#0C447C', fahrzeugpflege:'#633806'}
+
+  nzPauschalen.forEach(p => {
+    html += `
+      <div style="background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:14px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <div style="width:34px;height:34px;border-radius:var(--radius);background:${farben[p.bezeichnung]||'var(--bg3)'};display:flex;align-items:center;justify-content:center">
+            <i class="ti ${icons[p.bezeichnung]||'ti-clock'}" style="font-size:16px;color:${textfarben[p.bezeichnung]||'var(--text2)'}" aria-hidden="true"></i>
+          </div>
+          <div style="font-size:13px;font-weight:500">${p.label}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input type="number" value="${p.minuten_pro_woche}" min="0" max="180" step="5"
+            id="paus-${p.id}"
+            style="width:70px;font-size:14px;text-align:center;padding:7px 8px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text)"
+            onchange="updatePauschale('${p.id}', this.value)">
+          <span style="font-size:12px;color:var(--text2)">Min / Woche</span>
+          <span style="font-size:11px;color:var(--text3);margin-left:4px">(${(p.minuten_pro_woche/60).toFixed(1)}h)</span>
+        </div>
+      </div>`
+  })
+  html += `</div>`
+
+  // Tabelle pro Mitarbeiter
+  html += `
+    <div style="font-size:13px;font-weight:500;margin-bottom:10px">Zuweisung pro Mitarbeiter</div>
+    <div style="background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius-lg);overflow:hidden">
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead>
+        <tr style="background:var(--bg3)">
+          <th style="text-align:left;padding:8px 12px;font-size:11px;font-weight:500;color:var(--text2);border-bottom:0.5px solid var(--border)">Mitarbeiter</th>`
+
+  nzPauschalen.forEach(p => {
+    html += `<th style="text-align:center;padding:8px 10px;font-size:11px;font-weight:500;color:var(--text2);border-bottom:0.5px solid var(--border)">${p.label}</th>`
+  })
+  html += `
+          <th style="text-align:center;padding:8px 10px;font-size:11px;font-weight:500;color:var(--text2);border-bottom:0.5px solid var(--border)">Abw. (Min)</th>
+          <th style="text-align:right;padding:8px 12px;font-size:11px;font-weight:500;color:var(--text2);border-bottom:0.5px solid var(--border)">Gesamt/Wo</th>
+        </tr>
+      </thead><tbody>`
+
+  let gesamtMin = 0
+  mitarbeiter.forEach((ma, _) => {
+    const f = FARBEN[ma.farbe_idx || 0]
+    const ini = ((ma.vorname?ma.vorname[0]:'') + (ma.nachname?ma.nachname[0]:'')).toUpperCase() || '?'
+
+    html += `<tr style="border-bottom:0.5px solid var(--border)">
+      <td style="padding:10px 12px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="width:26px;height:26px;border-radius:50%;background:${f.bg};color:${f.txt};display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:500;flex-shrink:0">${ini}</div>
+          <div>
+            <div style="font-size:12px;font-weight:500">${ma.nachname}${ma.vorname?' '+ma.vorname:''}</div>
+            <div style="font-size:10px;color:var(--text2)">${ma.stundenlohn?ma.stundenlohn.toFixed(2)+'€/h':''}</div>
+          </div>
+        </div>
+      </td>`
+
+    let wochMin = 0
+    nzPauschalen.forEach(p => {
+      const cfg = nzMaConfig.find(c => c.mitarbeiter_id===ma.id && c.pauschale_id===p.id)
+      const aktiv = cfg ? cfg.aktiv : true
+      if(aktiv) wochMin += p.minuten_pro_woche + (cfg?.abweichung_minuten||0)
+
+      html += `<td style="text-align:center;padding:10px">
+        <input type="checkbox" ${aktiv?'checked':''}
+          onchange="toggleNzMa('${ma.id}','${p.id}',this.checked)"
+          style="width:16px;height:16px;cursor:pointer;accent-color:var(--green)">
+      </td>`
+    })
+
+    // Individuelle Abweichung
+    const ersteCfg = nzMaConfig.find(c => c.mitarbeiter_id===ma.id)
+    const abw = ersteCfg?.abweichung_minuten || 0
+    wochMin += abw
+
+    html += `<td style="text-align:center;padding:10px">
+      <input type="number" value="${abw}" min="-60" max="120" step="5"
+        style="width:56px;font-size:12px;text-align:center;padding:5px;border:0.5px solid var(--border2);border-radius:6px;background:var(--bg);color:var(--text)"
+        onchange="updateNzAbw('${ma.id}',this.value)"
+        title="Individuelle Abweichung in Minuten">
+    </td>
+    <td style="text-align:right;padding:10px 12px">
+      <span style="font-size:12px;font-weight:500;padding:3px 8px;border-radius:8px;background:var(--green-bg);color:var(--green-text)">${wochMin} min</span>
+      <div style="font-size:10px;color:var(--text3);margin-top:2px">+${(wochMin*4.3/60).toFixed(1)}h/Mo</div>
+    </td></tr>`
+
+    gesamtMin += wochMin
+  })
+
+  html += `</tbody>
+    <tfoot>
+      <tr style="background:var(--bg3)">
+        <td style="padding:10px 12px;font-size:12px;font-weight:500" colspan="${nzPauschalen.length+1}">Gesamt alle MA</td>
+        <td style="text-align:right;padding:10px 12px;font-size:12px;font-weight:500;color:var(--green)">
+          ${(gesamtMin/60).toFixed(1)}h/Wo · ${(gesamtMin*4.3/60).toFixed(1)}h/Mo
+        </td>
+      </tr>
+    </tfoot>
+    </table></div>
+    <div style="margin-top:12px;font-size:11px;color:var(--text3)">
+      Änderungen werden sofort gespeichert. Die Werte fließen automatisch in den Arbeitszeitnachweis und die Lohnabrechnung ein.
+    </div>`
+
+  el.innerHTML = html
+}
+
+async function updatePauschale(pauschaleId, minuten) {
+  try {
+    await sbPatch('nebenzeiten_pauschalen', pauschaleId, {minuten_pro_woche: parseInt(minuten)||0})
+    // Lokalen State aktualisieren
+    const p = nzPauschalen.find(x=>x.id===pauschaleId)
+    if(p) p.minuten_pro_woche = parseInt(minuten)||0
+    renderNebenzeiten()
+  } catch(e) { alert('Fehler beim Speichern: ' + e.message) }
+}
+
+async function toggleNzMa(maId, pauschaleId, aktiv) {
+  try {
+    // Suchen ob Eintrag existiert
+    const existing = nzMaConfig.find(c => c.mitarbeiter_id===maId && c.pauschale_id===pauschaleId)
+    if(existing) {
+      await sbPatch('nebenzeiten_ma', existing.id, {aktiv})
+      existing.aktiv = aktiv
+    } else {
+      // Neu anlegen
+      const res = await sbPost('nebenzeiten_ma', {mitarbeiter_id:maId, pauschale_id:pauschaleId, aktiv, abweichung_minuten:0})
+      nzMaConfig.push(res[0])
+    }
+    renderNebenzeiten()
+  } catch(e) { alert('Fehler: ' + e.message) }
+}
+
+async function updateNzAbw(maId, minuten) {
+  const min = parseInt(minuten)||0
+  try {
+    // Alle Einträge dieses MA aktualisieren
+    const cfgs = nzMaConfig.filter(c => c.mitarbeiter_id===maId)
+    for(const cfg of cfgs) {
+      await sbPatch('nebenzeiten_ma', cfg.id, {abweichung_minuten: min})
+      cfg.abweichung_minuten = min
+    }
+    renderNebenzeiten()
+  } catch(e) { alert('Fehler: ' + e.message) }
+}
 // ── COCKPIT ───────────────────────────────────────────────────
 let cockpitDaten = []
 
