@@ -122,7 +122,31 @@
     .detail-box .dv { font-size: 12px; font-weight: 500; }
     .pill { display: inline-block; font-size: 10px; font-weight: 500; padding: 2px 8px; border-radius: 10px; }
 
-    @media (max-width: 768px) {
+    .cockpit-card { background: var(--bg2); border: 0.5px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 8px; }
+    .cockpit-row { display: grid; grid-template-columns: 32px 1fr auto; gap: 10px; align-items: center; padding: 12px 14px; cursor: pointer; transition: background .12s; border-bottom: 0.5px solid var(--border); }
+    .cockpit-row:last-child { border-bottom: none; }
+    .cockpit-row:hover { background: var(--bg3); }
+    .cockpit-obj { font-size: 13px; font-weight: 500; }
+    .cockpit-meta { font-size: 11px; color: var(--text2); margin-top: 2px; }
+    .cockpit-detail { display: none; padding: 12px 14px; background: var(--bg3); border-top: 0.5px solid var(--border); }
+    .cockpit-detail.open { display: block; }
+    .cd-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 10px; }
+    .cd-box { background: var(--bg2); border-radius: var(--radius); padding: 8px 10px; }
+    .cd-lbl { font-size: 10px; color: var(--text2); margin-bottom: 2px; }
+    .cd-val { font-size: 13px; font-weight: 500; }
+    .begr-anzeige { background: var(--amber-bg); border: 0.5px solid #fde047; border-radius: var(--radius); padding: 8px 10px; margin-top: 8px; }
+    .begr-lbl { font-size: 10px; font-weight: 500; color: var(--amber-text); margin-bottom: 3px; }
+    .begr-txt { font-size: 12px; color: var(--amber-text); }
+    .aufg-mini { margin-top: 8px; display: flex; flex-direction: column; gap: 3px; }
+    .aufg-mini-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text2); }
+    .aufg-mini-item.done { color: var(--text); }
+    .cbadge { font-size: 10px; font-weight: 500; padding: 2px 8px; border-radius: 10px; white-space: nowrap; }
+    .cbadge.grn { background: var(--green-bg); color: var(--green-text); }
+    .cbadge.ylw { background: var(--amber-bg); color: var(--amber-text); }
+    .cbadge.red { background: var(--red-bg); color: var(--red-text); }
+    .cbadge.blu { background: var(--blue-bg); color: var(--blue-text); }
+    .cbadge.gry { background: var(--bg3); color: var(--text2); border: 0.5px solid var(--border2); }
+    @media (max-width: 600px) { .cd-grid { grid-template-columns: 1fr 1fr; } }
       .kpi-grid { grid-template-columns: repeat(2, 1fr); }
       .dispo-grid { grid-template-columns: 80px repeat(6, 1fr); font-size: 10px; }
       .main { padding: 12px; }
@@ -136,6 +160,7 @@
       <div class="logo">RJCD <span>Gebäudereinigung</span></div>
       <nav class="nav-tabs">
         <button class="nav-tab active" onclick="setView('dispoplan')"><i class="ti ti-calendar-week"></i> Dispoplan</button>
+        <button class="nav-tab" onclick="setView('cockpit')"><i class="ti ti-activity"></i> Cockpit</button>
         <button class="nav-tab" onclick="setView('mitarbeiter')"><i class="ti ti-users"></i> Mitarbeiter</button>
         <button class="nav-tab" onclick="setView('objekte')"><i class="ti ti-building"></i> Objekte</button>
       </nav>
@@ -173,6 +198,20 @@
       <div id="grid-container">
         <div class="loading"><div class="spinner"></div> Daten werden geladen...</div>
       </div>
+    </div>
+
+    <!-- COCKPIT VIEW -->
+    <div id="view-cockpit" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+        <div>
+          <div style="font-size:16px;font-weight:500">Live-Cockpit</div>
+          <div style="font-size:12px;color:var(--text2)" id="cockpit-datum">Heute</div>
+        </div>
+        <button class="btn-primary" onclick="ladeKockpit()"><i class="ti ti-refresh"></i> Aktualisieren</button>
+      </div>
+      <div class="kpi-grid" id="cockpit-kpi"></div>
+      <div style="font-size:13px;font-weight:500;margin-bottom:10px;color:var(--text2)">Alle Aufträge heute</div>
+      <div id="cockpit-liste"></div>
     </div>
 
     <div id="view-mitarbeiter">
@@ -717,14 +756,174 @@ async function deleteObj() {
 }
 
 // ── NAVIGATION ────────────────────────────────────────────────
+// ── COCKPIT ───────────────────────────────────────────────────
+let cockpitDaten = []
+
+async function ladeKockpit() {
+  document.getElementById('cockpit-liste').innerHTML = '<div class="loading"><div class="spinner"></div> Rückmeldungen werden geladen...</div>'
+  document.getElementById('cockpit-kpi').innerHTML = ''
+  document.getElementById('cockpit-datum').textContent =
+    new Date().toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'})
+
+  try {
+    const heute = toISO(new Date())
+
+    // Aufträge heute
+    const auftraegeHeute = await sbGet('auftraege',
+      `datum=eq.${heute}&order=soll_start&select=id,soll_start,soll_ende,status,objekt_id,mitarbeiter_id,anmerkung`)
+
+    // Zeiterfassungen dazu
+    const ids = auftraegeHeute.map(a=>a.id).join(',')
+    let zeitMap = {}, aufgMap = {}
+    if(ids) {
+      const zeiten = await sbGet('zeiterfassung',
+        `auftrag_id=in.(${ids})&select=id,auftrag_id,ist_start,ist_ende,abweichung_minuten,abweichung_begruendung,fahrt_ziel,fahrt_start`)
+      zeiten.forEach(z => zeitMap[z.auftrag_id] = z)
+
+      const aufgaben = await sbGet('aufgaben',
+        `auftrag_id=in.(${ids})&order=reihenfolge&select=id,auftrag_id,beschreibung,erledigt`)
+      aufgaben.forEach(a => {
+        if(!aufgMap[a.auftrag_id]) aufgMap[a.auftrag_id] = []
+        aufgMap[a.auftrag_id].push(a)
+      })
+    }
+
+    cockpitDaten = auftraegeHeute.map(a => ({
+      ...a,
+      objekt: objekte.find(o=>o.id===a.objekt_id) || {name:'?'},
+      ma:     mitarbeiter.find(m=>m.id===a.mitarbeiter_id) || {nachname:'?'},
+      zeit:   zeitMap[a.id] || null,
+      aufgaben: aufgMap[a.id] || [],
+    }))
+
+    renderCockpit()
+  } catch(e) {
+    document.getElementById('cockpit-liste').innerHTML =
+      `<div style="color:var(--red-text);font-size:13px;padding:16px">Fehler: ${e.message}</div>`
+  }
+}
+
+function statusBadge(a) {
+  const z = a.zeit
+  if(!z)                return '<span class="cbadge gry">Geplant</span>'
+  if(z.fahrt_ziel)      return '<span class="cbadge grn">Abgeschlossen</span>'
+  if(z.ist_ende)        return '<span class="cbadge ylw">Fahrt ausstehend</span>'
+  if(z.ist_start)       return '<span class="cbadge blu">Im Einsatz</span>'
+  return '<span class="cbadge gry">Geplant</span>'
+}
+
+function abwBadge(abw) {
+  if(abw === null || abw === undefined) return ''
+  if(Math.abs(abw) <= 5) return `<span class="cbadge grn">±${abw}min</span>`
+  if(abw > 5)            return `<span class="cbadge ylw">+${abw}min</span>`
+  return                        `<span class="cbadge grn">${abw}min</span>`
+}
+
+function renderCockpit() {
+  const d = cockpitDaten
+  const abgeschlossen = d.filter(a => a.zeit?.fahrt_ziel).length
+  const imEinsatz     = d.filter(a => a.zeit?.ist_start && !a.zeit?.fahrt_ziel).length
+  const abweichungen  = d.filter(a => a.zeit?.abweichung_minuten && Math.abs(a.zeit.abweichung_minuten) > 5).length
+  const gesamtAbw     = d.reduce((s,a) => s + (a.zeit?.abweichung_minuten||0), 0)
+
+  document.getElementById('cockpit-kpi').innerHTML = `
+    <div class="kpi">
+      <div class="kpi-label">Aufträge heute</div>
+      <div class="kpi-value">${d.length}</div>
+      <div class="kpi-sub">${abgeschlossen} abgeschlossen</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Im Einsatz</div>
+      <div class="kpi-value" style="color:var(--blue)">${imEinsatz}</div>
+      <div class="kpi-sub">Mitarbeiter aktiv</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Abweichungen</div>
+      <div class="kpi-value" style="color:${abweichungen>0?'var(--amber)':'var(--green)'}">${abweichungen}</div>
+      <div class="kpi-sub">mit Begründung</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Gesamt-Abw.</div>
+      <div class="kpi-value" style="color:${Math.abs(gesamtAbw)>30?'var(--amber)':'var(--text)'}">${gesamtAbw>0?'+':''}${gesamtAbw} min</div>
+      <div class="kpi-sub">Ist vs. Soll</div>
+    </div>`
+
+  if(!d.length) {
+    document.getElementById('cockpit-liste').innerHTML =
+      '<div style="color:var(--text2);font-size:13px;padding:24px;text-align:center">Heute keine Aufträge geplant.</div>'
+    return
+  }
+
+  document.getElementById('cockpit-liste').innerHTML = d.map((a,i) => {
+    const z   = a.zeit
+    const f   = FARBEN[a.ma?.farbe_idx || 0]
+    const ini = ((a.ma?.vorname?a.ma.vorname[0]:'') + (a.ma?.nachname?a.ma.nachname[0]:'')).toUpperCase() || '?'
+    const abw = z?.abweichung_minuten ?? null
+    const aufgGes  = a.aufgaben.length
+    const aufgDone = a.aufgaben.filter(ag=>ag.erledigt).length
+
+    return `<div class="cockpit-card">
+      <div class="cockpit-row" onclick="toggleCockpitDetail(${i})">
+        <div class="av" style="background:${f.bg};color:${f.txt};width:28px;height:28px;font-size:9px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:500">${ini}</div>
+        <div>
+          <div class="cockpit-obj">${a.objekt.name}</div>
+          <div class="cockpit-meta">${a.ma.nachname} · ${a.soll_start||''}${a.soll_ende?'–'+a.soll_ende:''} · ${z?.ist_start?'Ankunft: '+z.ist_start:'noch nicht gestartet'}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+          ${statusBadge(a)}
+          ${abwBadge(abw)}
+        </div>
+      </div>
+      <div class="cockpit-detail" id="cd-${i}">
+        <div class="cd-grid">
+          <div class="cd-box"><div class="cd-lbl">Soll-Beginn</div><div class="cd-val">${a.soll_start||'—'}</div></div>
+          <div class="cd-box"><div class="cd-lbl">Soll-Ende</div><div class="cd-val">${a.soll_ende||'—'}</div></div>
+          <div class="cd-box"><div class="cd-lbl">Ist-Beginn</div><div class="cd-val" style="color:${z?.ist_start?'var(--text)':'var(--text3)'}">${z?.ist_start||'—'}</div></div>
+          <div class="cd-box"><div class="cd-lbl">Ist-Ende</div><div class="cd-val" style="color:${z?.ist_ende?'var(--text)':'var(--text3)'}">${z?.ist_ende||'—'}</div></div>
+        </div>
+        <div class="cd-grid">
+          <div class="cd-box"><div class="cd-lbl">Abweichung</div><div class="cd-val" style="color:${abw&&Math.abs(abw)>5?'var(--amber)':'var(--text)'}">${abw!==null?((abw>0?'+':'')+abw+' min'):'—'}</div></div>
+          <div class="cd-box"><div class="cd-lbl">Fahrt nach</div><div class="cd-val">${z?.fahrt_ziel==='heim'?'🏠 Nach Hause':z?.fahrt_ziel==='next'?'➡ Nächstes Objekt':'—'}</div></div>
+          <div class="cd-box"><div class="cd-lbl">Aufgaben</div><div class="cd-val">${aufgGes?aufgDone+'/'+aufgGes+' erledigt':'—'}</div></div>
+          <div class="cd-box"><div class="cd-lbl">Status</div><div class="cd-val">${a.status||'geplant'}</div></div>
+        </div>
+        ${aufgGes ? `<div class="aufg-mini">${a.aufgaben.map(ag=>`
+          <div class="aufg-mini-item ${ag.erledigt?'done':''}">
+            <i class="ti ${ag.erledigt?'ti-circle-check':'ti-circle'}" style="font-size:14px;color:${ag.erledigt?'var(--green)':'var(--text3)'}" aria-hidden="true"></i>
+            ${ag.beschreibung}
+          </div>`).join('')}</div>` : ''}
+        ${z?.abweichung_begruendung ? `
+          <div class="begr-anzeige">
+            <div class="begr-lbl"><i class="ti ti-alert-triangle" style="font-size:11px" aria-hidden="true"></i> Begründung Abweichung (${abw>0?'+':''}${abw} min):</div>
+            <div class="begr-txt">"${z.abweichung_begruendung}"</div>
+          </div>` : ''}
+      </div>
+    </div>`
+  }).join('')
+}
+
+function toggleCockpitDetail(i) {
+  const el = document.getElementById('cd-'+i)
+  const isOpen = el.classList.contains('open')
+  document.querySelectorAll('.cockpit-detail').forEach(d => d.classList.remove('open'))
+  if(!isOpen) el.classList.add('open')
+}
+
+// Auto-Refresh alle 60 Sekunden wenn Cockpit aktiv
+setInterval(() => {
+  if(curView === 'cockpit') ladeKockpit()
+}, 60000)
+
 function setView(v) {
   curView = v
   document.getElementById('view-dispoplan').style.display = v==='dispoplan' ? 'block' : 'none'
+  document.getElementById('view-cockpit').style.display   = v==='cockpit'   ? 'block' : 'none'
   document.getElementById('view-mitarbeiter').style.display = v==='mitarbeiter' ? 'block' : 'none'
   document.getElementById('view-objekte').style.display = v==='objekte' ? 'block' : 'none'
-  document.querySelectorAll('.nav-tab').forEach((t,i) => {
-    t.className = 'nav-tab' + (['dispoplan','mitarbeiter','objekte'][i]===v?' active':'')
+  document.querySelectorAll('.nav-tab').forEach((tab,i) => {
+    tab.className = 'nav-tab' + (['dispoplan','cockpit','mitarbeiter','objekte'][i]===v?' active':'')
   })
+  if(v === 'cockpit') ladeKockpit()
 }
 
 function setGridView(v) {
