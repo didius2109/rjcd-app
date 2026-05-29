@@ -161,10 +161,30 @@
         notifyButton: { enable: false },
         allowLocalhostAsSecureOrigin: true,
       });
-      // Chef als 'chef' registrieren
-      await OneSignal.Notifications.requestPermission()
-      await OneSignal.login('chef')
+      // Prüfen ob Push bereits erlaubt
+      const permission = OneSignal.Notifications.permission
+      if(permission) {
+        // Bereits erlaubt — als Chef registrieren
+        await OneSignal.login('chef')
+        document.getElementById('push-btn').style.display = 'none'
+      } else {
+        // Noch nicht erlaubt — Button anzeigen
+        document.getElementById('push-btn').style.display = 'block'
+      }
     });
+
+    async function aktivierePush() {
+      if(!window.OneSignal) return
+      try {
+        await OneSignal.Notifications.requestPermission()
+        await OneSignal.login('chef')
+        document.getElementById('push-btn').style.display = 'none'
+        document.getElementById('push-btn').textContent = '✓ Push aktiv'
+        alert('Push-Benachrichtigungen sind jetzt aktiviert!')
+      } catch(e) {
+        alert('Push konnte nicht aktiviert werden: ' + e.message)
+      }
+    }
   </script>
 </head>
 <body>
@@ -182,6 +202,9 @@
     <div style="display:flex;align-items:center;gap:8px">
       <div class="status-dot" id="status-dot"></div>
       <span class="status-label" id="status-label">Verbinde...</span>
+      <button id="push-btn" onclick="aktivierePush()" style="display:none;background:var(--amber-bg,#FAEEDA);color:var(--amber,#BA7517);border:0.5px solid var(--amber,#BA7517);border-radius:var(--radius);padding:4px 10px;font-size:11px;font-weight:500;cursor:pointer">
+        🔔 Push aktivieren
+      </button>
     </div>
   </header>
 
