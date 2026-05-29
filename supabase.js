@@ -93,8 +93,9 @@ async function wendeDesignAn(d) {
 
   // Akzentfarbe als CSS-Variable setzen
   if(d.farbe) {
-    document.documentElement.style.setProperty('--accent', d.farbe)
-    document.documentElement.style.setProperty('--accent-bg', d.farbe_bg || '#E6F1FB')
+    document.documentElement.style.setProperty('--blue',   d.farbe)
+    document.documentElement.style.setProperty('--blue-bg', d.farbe_bg || '#E6F1FB')
+    document.documentElement.style.setProperty('--accent',  d.farbe)
   }
 
   // Logo
@@ -114,18 +115,17 @@ async function wendeDesignAn(d) {
     roboto: '"Roboto", sans-serif',
   }
   if(d.schrift && fonts[d.schrift]) {
-    document.documentElement.style.setProperty('--font-custom', fonts[d.schrift])
     document.body.style.fontFamily = fonts[d.schrift]
   }
 
-  // Modus
-  if(d.modus === 'dark') {
-    document.documentElement.setAttribute('data-theme', 'dark')
-  } else if(d.modus === 'light') {
-    document.documentElement.setAttribute('data-theme', 'light')
-  } else if(d.modus === 'contrast') {
-    document.documentElement.setAttribute('data-theme', 'contrast')
-  } else {
-    document.documentElement.removeAttribute('data-theme')
-  }
+  // Modus — auf HTML-Element setzen damit CSS-Selektoren greifen
+  const html = document.documentElement
+  if(d.modus === 'dark')     { html.setAttribute('data-theme','dark') }
+  else if(d.modus === 'light')    { html.setAttribute('data-theme','light') }
+  else if(d.modus === 'contrast') { html.setAttribute('data-theme','contrast') }
+  else                             { html.removeAttribute('data-theme') }
+
+  // Hintergrund sofort aktualisieren
+  document.body.style.background = getComputedStyle(document.documentElement).getPropertyValue('--bg')
+  document.body.style.color      = getComputedStyle(document.documentElement).getPropertyValue('--text')
 }
