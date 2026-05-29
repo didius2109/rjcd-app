@@ -678,6 +678,23 @@ function renderAuftragCard(a){
 
   // Fahrt
   if(step===3){
+    // Nächsten Auftrag des Tages ermitteln
+    const heute = toISO(new Date())
+    const naechsterAuftrag = auftraege.find((na, ni) =>
+      ni !== i &&
+      na.datum === heute &&
+      (aStep[ni]||0) === 0 &&
+      (toMin(na.soll_start) > toMin(a.soll_start))
+    )
+    const naechstesObjekt = naechsterAuftrag?.objekt
+    const naechsteAdresse = naechstesObjekt?.adresse || ''
+    const naechsterName   = naechstesObjekt?.name || ''
+
+    // Google Maps URL
+    const mapsUrl = naechsteAdresse
+      ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(naechsteAdresse)}&travelmode=driving`
+      : ''
+
     html+=`<div class="fahrt">
       <div class="fahrt-tit">${t('fahrtTit')}</div>
       <div class="fahrt-opts">
@@ -685,9 +702,25 @@ function renderAuftragCard(a){
           <i class="ti ti-home" aria-hidden="true"></i><span>${t('fahrtHeim')}</span>
         </div>
         <div class="f-opt ${fahrt==='next'?'on':''}" onclick="setFahrt(${i},'next')">
-          <i class="ti ti-building" aria-hidden="true"></i><span>${t('fahrtNext')}</span>
+          <i class="ti ti-building" aria-hidden="true"></i>
+          <span>${naechsterName || t('fahrtNext')}</span>
+          ${naechsteAdresse ? `<span style="font-size:10px;opacity:.7;display:block;margin-top:2px">${naechsteAdresse}</span>` : ''}
         </div>
       </div>
+      ${fahrt==='next' && mapsUrl ? `
+        <a href="${mapsUrl}" target="_blank" rel="noopener"
+          style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;padding:12px;background:#4285F4;color:#fff;border-radius:var(--radius);text-decoration:none;font-size:14px;font-weight:500">
+          <i class="ti ti-map-2" aria-hidden="true"></i>
+          ${lang==='pl'?'Nawiguj do':'Navigation starten'}
+          ${naechsterName ? '→ '+naechsterName : ''}
+        </a>` : ''}
+      ${fahrt==='heim' ? `
+        <a href="https://www.google.com/maps/dir/?api=1&destination=home&travelmode=driving"
+          target="_blank" rel="noopener"
+          style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;padding:12px;background:#4285F4;color:#fff;border-radius:var(--radius);text-decoration:none;font-size:14px;font-weight:500">
+          <i class="ti ti-map-2" aria-hidden="true"></i>
+          ${lang==='pl'?'Nawiguj do domu':'Navigation nach Hause'}
+        </a>` : ''}
     </div>`
   }
 
@@ -774,7 +807,19 @@ async function nextStep(ai){
     if(!fahrt){alert(t('zielPflicht'));return}
     setSaving()
     try{
-      await sbPatch('zeiterfassung',zeitIds[ai],{fahrt_ziel:fahrt,fahrt_start:now()})
+      // Nächstes Objekt ermitteln für den Log
+      const heute = toISO(new Date())
+      const naechster = auftraege.find((na,ni) =>
+        ni !== ai && na.datum === heute && (aStep[ni]||0) === 0 &&
+        (toMin(na.soll_start) > toMin(a.soll_start)))
+      const naechstesZiel = fahrt === 'next' && naechster
+        ? (naechster.objekt?.name || 'Nächstes Objekt')
+        : fahrt === 'heim' ? 'Zuhause' : fahrt
+
+      await sbPatch('zeiterfassung',zeitIds[ai],{
+        fahrt_ziel:  naechstesZiel,
+        fahrt_start: now()
+      })
       await sbPatch('auftraege',a.id,{status:'abgeschlossen'})
       aStep[ai]=4
       // Push an Chef senden

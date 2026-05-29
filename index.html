@@ -255,9 +255,42 @@
             <button class="vt-btn active" onclick="setGridView('woche')">Woche</button>
             <button class="vt-btn" onclick="setGridView('tag')">Tag</button>
           </div>
+          <button class="week-btn" onclick="openKopierenModal()" title="Aufträge aus Vorwoche kopieren" style="display:flex;align-items:center;gap:4px;font-size:12px">
+            <i class="ti ti-copy"></i> Kopieren
+          </button>
           <button class="btn-primary" onclick="openAuftragModal(null,null)">
             <i class="ti ti-plus"></i> Auftrag
           </button>
+        </div>
+      </div>
+
+      <!-- KOPIEREN MODAL -->
+      <div class="modal-bg" id="kopieren-modal">
+        <div class="modal">
+          <h3>Aufträge kopieren</h3>
+          <div style="font-size:12px;color:var(--text2);margin-bottom:14px">
+            Wählen Sie eine Quellwoche — alle Aufträge werden in die aktuelle Woche (<span id="kop-ziel-label"></span>) kopiert.
+          </div>
+          <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:4px">Quelle</label>
+          <select id="kop-quelle" style="width:100%;font-size:13px;padding:8px 10px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);margin-bottom:12px">
+            <option value="-1">Vorwoche</option>
+            <option value="-2">Vor 2 Wochen</option>
+            <option value="-3">Vor 3 Wochen</option>
+            <option value="-4">Vor 4 Wochen</option>
+          </select>
+          <div id="kop-vorschau" style="background:var(--bg3);border-radius:var(--radius);padding:10px 12px;font-size:12px;color:var(--text2);min-height:48px;margin-bottom:12px">
+            Vorschau wird geladen...
+          </div>
+          <div style="font-size:11px;color:var(--text2);background:var(--amber-bg);border-radius:var(--radius);padding:8px 10px;margin-bottom:12px">
+            <i class="ti ti-info-circle" style="font-size:12px;vertical-align:-1px" aria-hidden="true"></i>
+            Bereits vorhandene Aufträge in der Zielwoche bleiben erhalten. Aufgaben werden ebenfalls kopiert.
+          </div>
+          <div style="display:flex;gap:8px">
+            <button onclick="closeModal('kopieren-modal')" style="flex:1;background:none;border:0.5px solid var(--border2);border-radius:var(--radius);padding:9px;font-size:13px;cursor:pointer;color:var(--text2)">Abbrechen</button>
+            <button onclick="kopierenBestaetigen()" style="flex:1;background:var(--text);color:var(--bg2);border:none;border-radius:var(--radius);padding:9px;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px" id="kop-btn">
+              <i class="ti ti-copy" aria-hidden="true"></i> Jetzt kopieren
+            </button>
+          </div>
         </div>
       </div>
       <div id="grid-container">
@@ -433,13 +466,23 @@
   <div class="modal">
     <h3 id="auftrag-modal-title">Neuer Auftrag</h3>
     <label>Mitarbeiter</label><select id="am-ma"></select>
-    <label>Objekt</label><select id="am-obj"></select>
+    <label>Objekt</label>
+    <div style="display:flex;gap:6px;margin-bottom:4px">
+      <input type="text" id="am-obj-suche" placeholder="🔍 Buchstabe oder Name..."
+        style="flex:1;font-size:13px;padding:7px 10px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text)"
+        oninput="filterObjekte(this.value)" autocomplete="off">
+      <button onclick="clearObjSuche()" style="background:none;border:0.5px solid var(--border2);border-radius:var(--radius);padding:6px 10px;cursor:pointer;color:var(--text2);font-size:11px">✕</button>
+    </div>
+    <select id="am-obj" size="5" style="width:100%;font-size:13px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text)"></select>
     <label>Datum</label><input type="date" id="am-datum">
     <div class="r2">
       <div><label>Soll-Beginn</label><input type="time" id="am-start" value="07:00"></div>
       <div><label>Soll-Ende</label><input type="time" id="am-end" value="09:00"></div>
     </div>
     <label>Aufgaben / Leistung</label>
+    <div style="font-size:11px;color:var(--text2);margin-bottom:4px">
+      Wird automatisch aus der Leistungsbeschreibung des Objekts geladen — trennbar durch Komma oder Zeilenumbruch
+    </div>
     <textarea id="am-aufg" placeholder="z.B. Böden wischen, WC reinigen, Müll entsorgen"></textarea>
     <label>Anmerkung</label>
     <input type="text" id="am-anm" placeholder="z.B. Sonderreinigung">
@@ -766,6 +809,9 @@ function openAuftragModal(auftragId, maId, datum) {
     `<option value="${m.id}">${m.nachname}${m.vorname?' '+m.vorname:''}</option>`).join('')
   document.getElementById('am-obj').innerHTML = objekte.map(o=>
     `<option value="${o.id}">${o.name}</option>`).join('')
+  // Suchfeld leeren
+  const sucheEl = document.getElementById('am-obj-suche')
+  if(sucheEl) sucheEl.value = ''
 
   if(auftragId) {
     const a = auftraege.find(x=>x.id===auftragId)
@@ -783,14 +829,34 @@ function openAuftragModal(auftragId, maId, datum) {
     document.getElementById('am-datum').value = datum || toISO(new Date())
     document.getElementById('am-start').value = '07:00'
     document.getElementById('am-end').value = '09:00'
-    document.getElementById('am-aufg').value = ''
     document.getElementById('am-anm').value = ''
+    // Leistungsbeschreibung des ersten Objekts automatisch laden
+    ladeLeistungsbeschreibung()
   }
   updateKalk()
-  document.getElementById('am-obj').oninput = updateKalk
+
+  // Bei Objektwechsel: Leistungsbeschreibung automatisch aktualisieren
+  document.getElementById('am-obj').oninput = () => {
+    updateKalk()
+    if(!auftragId) ladeLeistungsbeschreibung()
+  }
   document.getElementById('am-start').oninput = updateKalk
   document.getElementById('am-end').oninput = updateKalk
   document.getElementById('auftrag-modal').classList.add('open')
+}
+
+function ladeLeistungsbeschreibung() {
+  const objId = document.getElementById('am-obj').value
+  const obj = objekte.find(o => o.id === objId)
+  const aufgFeld = document.getElementById('am-aufg')
+  if(obj?.leistungsbeschreibung) {
+    aufgFeld.value = obj.leistungsbeschreibung
+    aufgFeld.style.border = '0.5px solid var(--green)'
+    aufgFeld.title = 'Automatisch aus Leistungsbeschreibung des Objekts geladen'
+  } else {
+    aufgFeld.value = ''
+    aufgFeld.style.border = ''
+  }
 }
 
 function updateKalk() {
@@ -824,19 +890,51 @@ async function saveAuftrag() {
   const datum  = document.getElementById('am-datum').value
   const start  = document.getElementById('am-start').value || null
   const ende   = document.getElementById('am-end').value || null
+  const anmerkung = document.getElementById('am-aufg').value || null
   const data = {
     mitarbeiter_id: maId,
     objekt_id: objId,
     datum,
     soll_start: start,
     soll_ende: ende,
-    anmerkung: document.getElementById('am-aufg').value || null,
+    anmerkung,
     status: 'geplant'
   }
   try {
     const istNeu = !editAuftragId
-    if(editAuftragId) await sbPatch('auftraege', editAuftragId, data)
-    else await sbPost('auftraege', data)
+    let auftragId = editAuftragId
+
+    if(editAuftragId) {
+      await sbPatch('auftraege', editAuftragId, data)
+    } else {
+      // Neuen Auftrag anlegen
+      const res = await sbPost('auftraege', data)
+      auftragId = res[0].id
+
+      // Aufgaben aus Leistungsbeschreibung des Objekts generieren
+      const obj = objekte.find(o => o.id === objId)
+      const leistung = obj?.leistungsbeschreibung || anmerkung || ''
+
+      if(leistung) {
+        // Leistungsbeschreibung in einzelne Aufgaben aufteilen
+        // Trenner: Komma, Semikolon, Zeilenumbruch oder Aufzählungszeichen
+        const aufgaben = leistung
+          .split(/[,;\n\r•\-–]+/)
+          .map(s => s.trim())
+          .filter(s => s.length > 2)  // Sehr kurze Fragmente ignorieren
+
+        if(aufgaben.length > 0) {
+          // Alle Aufgaben auf einmal speichern
+          const aufgabenData = aufgaben.map((beschreibung, idx) => ({
+            auftrag_id:  auftragId,
+            beschreibung,
+            reihenfolge: idx + 1,
+            erledigt:    false,
+          }))
+          await sbPost('aufgaben', aufgabenData)
+        }
+      }
+    }
 
     // Push an Mitarbeiter senden
     const ma  = mitarbeiter.find(m => m.id === maId)
@@ -1036,6 +1134,133 @@ async function pruefeErinnerungen() {
 
 // Alle 10 Minuten Erinnerungen prüfen
 setInterval(pruefeErinnerungen, 10 * 60 * 1000)
+
+// ── OBJEKT SUCHE ─────────────────────────────────────────────
+function filterObjekte(suche) {
+  const sel = document.getElementById('am-obj')
+  const curVal = sel.value
+  const s = suche.trim().toLowerCase()
+  sel.innerHTML = objekte
+    .filter(o => !s || o.name.toLowerCase().startsWith(s) || o.name.toLowerCase().includes(s))
+    .map(o => `<option value="${o.id}" ${o.id===curVal?'selected':''}>${o.name}</option>`)
+    .join('')
+  // Ersten Eintrag wählen wenn aktueller nicht mehr sichtbar
+  if(!sel.value && sel.options.length > 0) {
+    sel.selectedIndex = 0
+    updateKalk()
+    if(!document.getElementById('auftrag-modal-title').textContent.includes('bearbeiten')) {
+      ladeLeistungsbeschreibung()
+    }
+  }
+}
+
+function clearObjSuche() {
+  document.getElementById('am-obj-suche').value = ''
+  filterObjekte('')
+}
+
+// ── WOCHE KOPIEREN ────────────────────────────────────────────
+async function openKopierenModal() {
+  const mo = getMonday(curWeek)
+  const so = addDays(mo, 6)
+  document.getElementById('kop-ziel-label').textContent =
+    `KW ${getKW(mo)} · ${fmt(mo)}–${fmt(so)}`
+  document.getElementById('kopieren-modal').classList.add('open')
+  await ladeKopierVorschau()
+  document.getElementById('kop-quelle').onchange = ladeKopierVorschau
+}
+
+async function ladeKopierVorschau() {
+  const offset = parseInt(document.getElementById('kop-quelle').value)
+  const mo = getMonday(curWeek + offset)
+  const so = addDays(mo, 6)
+  const prev = document.getElementById('kop-vorschau')
+  prev.textContent = 'Lädt...'
+  try {
+    const data = await sbGet('auftraege',
+      `datum=gte.${toISO(mo)}&datum=lte.${toISO(so)}&order=datum,soll_start&select=id,datum,soll_start,soll_ende,mitarbeiter_id,objekt_id`)
+    if(!data.length) {
+      prev.textContent = 'Keine Aufträge in dieser Woche gefunden.'
+      return
+    }
+    const zeilen = data.map(a => {
+      const ma  = mitarbeiter.find(m => m.id === a.mitarbeiter_id)
+      const obj = objekte.find(o => o.id === a.objekt_id)
+      const d   = parseDatum(a.datum)
+      return `${TAGE_KURZ[d.getDay()===0?6:d.getDay()-1]} · ${obj?.name||'?'} · ${ma?.nachname||'?'} · ${a.soll_start||''}${a.soll_ende?'–'+a.soll_ende:''}`
+    })
+    prev.innerHTML = `<div style="font-weight:500;margin-bottom:6px">${data.length} Aufträge aus KW ${getKW(mo)} · ${fmt(mo)}–${fmt(so)}:</div>` +
+      zeilen.map(z => `<div style="margin-bottom:3px">• ${z}</div>`).join('')
+  } catch(e) {
+    prev.textContent = 'Fehler beim Laden: ' + e.message
+  }
+}
+
+async function kopierenBestaetigen() {
+  const offset = parseInt(document.getElementById('kop-quelle').value)
+  const quellMo = getMonday(curWeek + offset)
+  const quellSo = addDays(quellMo, 6)
+  const zielMo  = getMonday(curWeek)
+  const btn = document.getElementById('kop-btn')
+  btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px;display:inline-block"></div>'
+  btn.disabled = true
+  try {
+    // Quell-Aufträge laden
+    const quellAuftraege = await sbGet('auftraege',
+      `datum=gte.${toISO(quellMo)}&datum=lte.${toISO(quellSo)}&order=datum,soll_start&select=*`)
+
+    if(!quellAuftraege.length) {
+      alert('Keine Aufträge in der Quellwoche gefunden.')
+      btn.innerHTML = '<i class="ti ti-copy"></i> Jetzt kopieren'
+      btn.disabled = false
+      return
+    }
+
+    let kopiert = 0
+    for(const a of quellAuftraege) {
+      // Wochentag des Quell-Auftrags berechnen
+      const quellDatum = parseDatum(a.datum)
+      const wochentag  = quellDatum.getDay() === 0 ? 6 : quellDatum.getDay() - 1
+      // Gleiches Datum in der Zielwoche
+      const zielDatum  = addDays(zielMo, wochentag)
+
+      // Neuen Auftrag anlegen
+      const neuerAuftrag = await sbPost('auftraege', {
+        mitarbeiter_id: a.mitarbeiter_id,
+        objekt_id:      a.objekt_id,
+        datum:          toISO(zielDatum),
+        soll_start:     a.soll_start,
+        soll_ende:      a.soll_ende,
+        anmerkung:      a.anmerkung,
+        status:         'geplant',
+      })
+      const neueId = neuerAuftrag[0].id
+
+      // Aufgaben des Quell-Auftrags kopieren
+      try {
+        const quellAufgaben = await sbGet('aufgaben',
+          `auftrag_id=eq.${a.id}&order=reihenfolge&select=beschreibung,reihenfolge`)
+        if(quellAufgaben.length) {
+          await sbPost('aufgaben', quellAufgaben.map(ag => ({
+            auftrag_id:  neueId,
+            beschreibung: ag.beschreibung,
+            reihenfolge:  ag.reihenfolge,
+            erledigt:     false,
+          })))
+        }
+      } catch(e) {}
+      kopiert++
+    }
+
+    closeModal('kopieren-modal')
+    await loadWoche()
+    alert(`✓ ${kopiert} Aufträge erfolgreich in KW ${getKW(zielMo)} kopiert!`)
+  } catch(e) {
+    alert('Fehler beim Kopieren: ' + e.message)
+  }
+  btn.innerHTML = '<i class="ti ti-copy"></i> Jetzt kopieren'
+  btn.disabled = false
+}
 
 // ── MITARBEITER TABS ──────────────────────────────────────────
 let curMaTab = 'liste'
