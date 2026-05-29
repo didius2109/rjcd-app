@@ -55,3 +55,77 @@ async function sbDeleteWhere(table, filter) {
   }
   return true
 }
+
+// ── DESIGN EINSTELLUNGEN ──────────────────────────────────────
+async function ladeDesign() {
+  try {
+    const rows = await sbGet('app_einstellungen', 'select=schluessel,wert')
+    const d = {}
+    rows.forEach(r => d[r.schluessel] = r.wert)
+    return d
+  } catch(e) {
+    console.log('Design laden:', e)
+    return {}
+  }
+}
+
+async function speichereDesign(schluessel, wert) {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/app_einstellungen?schluessel=eq.${schluessel}`, {
+      method: 'PATCH',
+      headers: { ...HEADERS, 'Prefer': 'return=representation' },
+      body: JSON.stringify({ wert, aktualisiert: new Date().toISOString() })
+    })
+    if(!res.ok) throw new Error(await res.text())
+    return true
+  } catch(e) {
+    console.log('Design speichern:', e)
+    return false
+  }
+}
+
+async function wendeDesignAn(d) {
+  if(!d) return
+
+  // Firmenname
+  const nameEls = document.querySelectorAll('.app-firmenname')
+  nameEls.forEach(el => el.textContent = d.firmenname || 'RJCD Gebäudereinigung')
+
+  // Akzentfarbe als CSS-Variable setzen
+  if(d.farbe) {
+    document.documentElement.style.setProperty('--accent', d.farbe)
+    document.documentElement.style.setProperty('--accent-bg', d.farbe_bg || '#E6F1FB')
+  }
+
+  // Logo
+  const logoEls = document.querySelectorAll('.app-logo')
+  logoEls.forEach(el => {
+    if(d.logo) {
+      el.innerHTML = `<img src="${d.logo}" style="height:24px;object-fit:contain;vertical-align:middle;margin-right:6px" alt="Logo">${d.firmenname||'RJCD'}`
+    } else {
+      el.textContent = `${d.emoji||'🏢'} ${d.firmenname||'RJCD Gebäudereinigung'}`
+    }
+  })
+
+  // Schriftart
+  const fonts = {
+    system: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    inter:  '"Inter", sans-serif',
+    roboto: '"Roboto", sans-serif',
+  }
+  if(d.schrift && fonts[d.schrift]) {
+    document.documentElement.style.setProperty('--font-custom', fonts[d.schrift])
+    document.body.style.fontFamily = fonts[d.schrift]
+  }
+
+  // Modus
+  if(d.modus === 'dark') {
+    document.documentElement.setAttribute('data-theme', 'dark')
+  } else if(d.modus === 'light') {
+    document.documentElement.setAttribute('data-theme', 'light')
+  } else if(d.modus === 'contrast') {
+    document.documentElement.setAttribute('data-theme', 'contrast')
+  } else {
+    document.documentElement.removeAttribute('data-theme')
+  }
+}

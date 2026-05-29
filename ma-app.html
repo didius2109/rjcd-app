@@ -343,6 +343,13 @@ function getKW(d){const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDa
 // ── LOGIN ─────────────────────────────────────────────────────
 async function initLogin(){
   try{
+    // Design laden und anwenden
+    const d = await ladeDesign()
+    wendeDesignAn(d)
+    // Firmenname auf Login-Seite
+    const logoEl = document.querySelector('.login-logo')
+    if(logoEl && d.firmenname) logoEl.textContent = d.kurzname || 'RJCD'
+
     const mas=await sbGet('mitarbeiter','aktiv=eq.true&order=nachname&select=id,nachname,vorname,sprache')
     const sel=document.getElementById('l-ma')
     mas.forEach(m=>{const o=document.createElement('option');o.value=m.id;o.textContent=m.nachname+(m.vorname?', '+m.vorname:'');o.dataset.spr=m.sprache||'de';sel.appendChild(o)})
@@ -416,6 +423,24 @@ async function sendePushAnChef(titel, text) {
       body: JSON.stringify({typ:'chef', titel, text})
     })
   } catch(e) { console.log('Chef-Push:', e) }
+}
+
+// ── DESIGN ───────────────────────────────────────────────────
+async function ladeDesign(){
+  try{
+    const r=await sbGet('app_einstellungen','select=schluessel,wert')
+    const d={};r.forEach(x=>d[x.schluessel]=x.wert);return d
+  }catch(e){return{}}
+}
+function wendeDesignAn(d){
+  if(!d)return
+  if(d.farbe){
+    document.documentElement.style.setProperty('--blue',d.farbe)
+    document.documentElement.style.setProperty('--blue-bg',d.farbe_bg||'#E6F1FB')
+  }
+  if(d.modus==='dark') document.documentElement.setAttribute('data-theme','dark')
+  else if(d.modus==='light') document.documentElement.setAttribute('data-theme','light')
+  else document.documentElement.removeAttribute('data-theme')
 }
 
 // ── NAVIGATION ────────────────────────────────────────────────

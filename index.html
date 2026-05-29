@@ -191,12 +191,13 @@
 <div class="app">
   <header class="header">
     <div class="header-left">
-      <div class="logo">RJCD <span>Gebäudereinigung</span></div>
+      <div class="logo app-logo app-firmenname">RJCD <span>Gebäudereinigung</span></div>
       <nav class="nav-tabs">
         <button class="nav-tab active" onclick="setView('dispoplan')"><i class="ti ti-calendar-week"></i> Dispoplan</button>
         <button class="nav-tab" onclick="setView('cockpit')"><i class="ti ti-activity"></i> Cockpit</button>
         <button class="nav-tab" onclick="setView('mitarbeiter')"><i class="ti ti-users"></i> Mitarbeiter</button>
         <button class="nav-tab" onclick="setView('objekte')"><i class="ti ti-building"></i> Objekte</button>
+        <button class="nav-tab" onclick="setView('design')"><i class="ti ti-palette"></i> Design</button>
       </nav>
     </div>
     <div style="display:flex;align-items:center;gap:8px">
@@ -249,6 +250,118 @@
       <div class="kpi-grid" id="cockpit-kpi"></div>
       <div style="font-size:13px;font-weight:500;margin-bottom:10px;color:var(--text2)">Alle Aufträge heute</div>
       <div id="cockpit-liste"></div>
+    </div>
+
+    <!-- DESIGN VIEW -->
+    <div id="view-design" style="display:none">
+      <div style="font-size:16px;font-weight:500;margin-bottom:4px">Design & Personalisierung</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:16px">Logo, Farben und Erscheinungsbild anpassen — gilt für alle Apps</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+
+        <!-- Firma & Logo -->
+        <div style="background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:16px">
+          <div style="font-size:13px;font-weight:500;margin-bottom:12px;display:flex;align-items:center;gap:6px"><i class="ti ti-building" aria-hidden="true"></i> Firma & Logo</div>
+          <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Firmenname</label>
+          <input type="text" id="d-name" value="RJCD Gebäudereinigung" style="width:100%;font-size:13px;padding:8px 10px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);margin-bottom:8px" oninput="updateDesignPreview()">
+          <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Kurzname (Homescreen)</label>
+          <input type="text" id="d-short" value="RJCD" maxlength="12" style="width:100%;font-size:13px;padding:8px 10px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);margin-bottom:8px" oninput="updateDesignPreview()">
+          <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:6px">Logo hochladen</label>
+          <div onclick="document.getElementById('d-logo-inp').click()" id="d-logo-area"
+            style="border:1.5px dashed var(--border2);border-radius:var(--radius);padding:16px;text-align:center;cursor:pointer;margin-bottom:8px">
+            <div id="d-logo-preview">
+              <div style="font-size:28px;margin-bottom:4px">🏢</div>
+              <div style="font-size:11px;color:var(--text2)">PNG, SVG, JPG · max. 500KB</div>
+            </div>
+            <input type="file" id="d-logo-inp" accept="image/*" style="display:none" onchange="ladeLogoHoch(this)">
+          </div>
+          <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:6px">Oder Emoji als Logo</label>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <span style="font-size:22px;cursor:pointer" onclick="setDesignEmoji('🏢')">🏢</span>
+            <span style="font-size:22px;cursor:pointer" onclick="setDesignEmoji('✨')">✨</span>
+            <span style="font-size:22px;cursor:pointer" onclick="setDesignEmoji('🧹')">🧹</span>
+            <span style="font-size:22px;cursor:pointer" onclick="setDesignEmoji('🪣')">🪣</span>
+            <span style="font-size:22px;cursor:pointer" onclick="setDesignEmoji('💎')">💎</span>
+            <span style="font-size:22px;cursor:pointer" onclick="setDesignEmoji('⭐')">⭐</span>
+            <span style="font-size:22px;cursor:pointer" onclick="setDesignEmoji('🔵')">🔵</span>
+            <span style="font-size:22px;cursor:pointer" onclick="setDesignEmoji('🟢')">🟢</span>
+          </div>
+        </div>
+
+        <!-- Farben + Vorschau -->
+        <div>
+          <div style="background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:16px;margin-bottom:14px">
+            <div style="font-size:13px;font-weight:500;margin-bottom:10px;display:flex;align-items:center;gap:6px"><i class="ti ti-palette" aria-hidden="true"></i> Akzentfarbe</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px" id="d-swatches">
+              <div style="width:30px;height:30px;border-radius:8px;background:#185FA5;cursor:pointer;border:2px solid var(--text)" onclick="setDesignColor('#185FA5','#E6F1FB')" title="Blau"></div>
+              <div style="width:30px;height:30px;border-radius:8px;background:#1D9E75;cursor:pointer;border:2px solid transparent" onclick="setDesignColor('#1D9E75','#E1F5EE')" title="Grün"></div>
+              <div style="width:30px;height:30px;border-radius:8px;background:#7C3AED;cursor:pointer;border:2px solid transparent" onclick="setDesignColor('#7C3AED','#EDE9FE')" title="Violett"></div>
+              <div style="width:30px;height:30px;border-radius:8px;background:#DC2626;cursor:pointer;border:2px solid transparent" onclick="setDesignColor('#DC2626','#FEE2E2')" title="Rot"></div>
+              <div style="width:30px;height:30px;border-radius:8px;background:#D97706;cursor:pointer;border:2px solid transparent" onclick="setDesignColor('#D97706','#FEF3C7')" title="Orange"></div>
+              <div style="width:30px;height:30px;border-radius:8px;background:#0891B2;cursor:pointer;border:2px solid transparent" onclick="setDesignColor('#0891B2','#E0F2FE')" title="Cyan"></div>
+              <div style="width:30px;height:30px;border-radius:8px;background:#BE185D;cursor:pointer;border:2px solid transparent" onclick="setDesignColor('#BE185D','#FCE7F3')" title="Pink"></div>
+              <div style="width:30px;height:30px;border-radius:8px;background:#1a1a18;cursor:pointer;border:2px solid transparent" onclick="setDesignColor('#1a1a18','#e8e6e1')" title="Schwarz"></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <input type="color" id="d-color-pick" value="#185FA5" oninput="setDesignColor(this.value,'')" style="width:34px;height:34px;border:none;border-radius:8px;cursor:pointer;padding:0">
+              <span style="font-size:11px;color:var(--text2)">Eigene Farbe</span>
+            </div>
+          </div>
+
+          <!-- Modus -->
+          <div style="background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:16px;margin-bottom:14px">
+            <div style="font-size:13px;font-weight:500;margin-bottom:10px;display:flex;align-items:center;gap:6px"><i class="ti ti-sun" aria-hidden="true"></i> Erscheinungsbild</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+              <div id="dm-auto" onclick="setDesignModus('auto')" style="padding:8px;border-radius:var(--radius);border:0.5px solid var(--text);background:var(--bg3);text-align:center;cursor:pointer">
+                <i class="ti ti-device-laptop" style="font-size:18px;display:block;margin-bottom:3px" aria-hidden="true"></i><span style="font-size:11px;font-weight:500">Automatisch</span>
+              </div>
+              <div id="dm-light" onclick="setDesignModus('light')" style="padding:8px;border-radius:var(--radius);border:0.5px solid var(--border);text-align:center;cursor:pointer">
+                <i class="ti ti-sun" style="font-size:18px;display:block;margin-bottom:3px" aria-hidden="true"></i><span style="font-size:11px">Hell</span>
+              </div>
+              <div id="dm-dark" onclick="setDesignModus('dark')" style="padding:8px;border-radius:var(--radius);border:0.5px solid var(--border);text-align:center;cursor:pointer">
+                <i class="ti ti-moon" style="font-size:18px;display:block;margin-bottom:3px" aria-hidden="true"></i><span style="font-size:11px">Dunkel</span>
+              </div>
+              <div id="dm-contrast" onclick="setDesignModus('contrast')" style="padding:8px;border-radius:var(--radius);border:0.5px solid var(--border);text-align:center;cursor:pointer">
+                <i class="ti ti-contrast" style="font-size:18px;display:block;margin-bottom:3px" aria-hidden="true"></i><span style="font-size:11px">Hoher Kontrast</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Vorschau -->
+          <div style="background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:14px">
+            <div style="font-size:11px;font-weight:500;color:var(--text2);margin-bottom:8px">Vorschau</div>
+            <div id="d-prev-bar" style="border-radius:8px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;background:#185FA5;color:#fff">
+              <div id="d-prev-logo" style="font-size:14px;font-weight:500">🏢 RJCD Gebäudereinigung</div>
+              <div style="font-size:10px;background:rgba(255,255,255,0.2);padding:3px 9px;border-radius:10px;font-weight:500">Verbunden</div>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
+              <div id="d-prev-kpi" style="border-radius:6px;padding:8px;text-align:center;background:#E6F1FB">
+                <div style="font-size:16px;font-weight:500;color:#185FA5" id="d-prev-kpi-val">7</div>
+                <div style="font-size:9px;color:#185FA5;margin-top:2px">Aufträge</div>
+              </div>
+              <div style="border-radius:6px;padding:8px;text-align:center;background:#E1F5EE">
+                <div style="font-size:16px;font-weight:500;color:#085041">14h</div>
+                <div style="font-size:9px;color:#085041;margin-top:2px">Stunden</div>
+              </div>
+              <div style="border-radius:6px;padding:8px;text-align:center;background:#F0FDF4">
+                <div style="font-size:16px;font-weight:500;color:#166534">42%</div>
+                <div style="font-size:9px;color:#166534;margin-top:2px">Marge</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Speichern -->
+      <div style="background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;margin-top:14px;flex-wrap:wrap;gap:8px">
+        <div style="font-size:12px;color:var(--text2)">Änderungen gelten sofort in Chef-App und MA-App</div>
+        <div style="display:flex;gap:8px">
+          <button onclick="resetDesignApp()" style="background:none;border:0.5px solid var(--border2);border-radius:var(--radius);padding:8px 14px;font-size:12px;cursor:pointer;color:var(--text2)">Zurücksetzen</button>
+          <button onclick="speichereDesignApp()" style="background:var(--text);color:var(--bg2);border:none;border-radius:var(--radius);padding:8px 18px;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px">
+            <i class="ti ti-device-floppy" aria-hidden="true"></i> Speichern
+          </button>
+        </div>
+      </div>
     </div>
 
     <div id="view-mitarbeiter">
@@ -399,6 +512,9 @@ async function init() {
     mitarbeiter = await sbGet('mitarbeiter', 'aktiv=eq.true&order=nachname')
     objekte     = await sbGet('objekte',     'aktiv=eq.true&order=name')
     setStatus('Verbunden', true)
+    // Design laden und anwenden
+    const d = await ladeDesign()
+    wendeDesignAn(d)
     await loadWoche()
     renderMaGrid()
     renderObjGrid()
@@ -1243,16 +1359,141 @@ setInterval(() => {
   if(curView === 'cockpit') ladeKockpit()
 }, 60000)
 
+// ── DESIGN ───────────────────────────────────────────────────
+let designState = {
+  farbe: '#185FA5', farbe_bg: '#E6F1FB',
+  emoji: '🏢', logo: '', modus: 'auto'
+}
+let designLogoUrl = null
+
+async function initDesign() {
+  try {
+    const d = await ladeDesign()
+    if(d.firmenname) document.getElementById('d-name').value = d.firmenname
+    if(d.kurzname)   document.getElementById('d-short').value = d.kurzname
+    if(d.farbe)  { designState.farbe = d.farbe; designState.farbe_bg = d.farbe_bg||'#E6F1FB' }
+    if(d.emoji)    designState.emoji = d.emoji
+    if(d.logo)   { designLogoUrl = d.logo }
+    if(d.modus)    designState.modus = d.modus
+    wendeDesignAn(d)
+    updateDesignPreview()
+  } catch(e) {}
+}
+
+function setDesignColor(hex, bg) {
+  designState.farbe = hex
+  designState.farbe_bg = bg || '#E6F1FB'
+  document.querySelectorAll('#d-swatches div').forEach(s => {
+    s.style.border = s.style.background === hex ? '2px solid var(--text)' : '2px solid transparent'
+  })
+  document.getElementById('d-color-pick').value = hex
+  updateDesignPreview()
+}
+
+function setDesignEmoji(emoji) {
+  designState.emoji = emoji
+  if(!designLogoUrl) updateDesignPreview()
+}
+
+function setDesignModus(m) {
+  designState.modus = m
+  const ids = ['auto','light','dark','contrast']
+  ids.forEach(id => {
+    const el = document.getElementById('dm-'+id)
+    if(el) {
+      el.style.border = id===m ? '0.5px solid var(--text)' : '0.5px solid var(--border)'
+      el.style.background = id===m ? 'var(--bg3)' : 'none'
+      el.querySelector('span').style.fontWeight = id===m ? '500' : 'normal'
+    }
+  })
+}
+
+function ladeLogoHoch(input) {
+  const file = input.files[0]
+  if(!file) return
+  if(file.size > 500*1024) { alert('Bitte ein Bild unter 500KB wählen'); return }
+  const reader = new FileReader()
+  reader.onload = e => {
+    designLogoUrl = e.target.result
+    document.getElementById('d-logo-preview').innerHTML =
+      `<img src="${designLogoUrl}" style="max-height:50px;max-width:160px;object-fit:contain;margin-bottom:4px" alt="Logo"><div style="font-size:11px;color:var(--text2)">Tippen zum Ändern</div>`
+    updateDesignPreview()
+  }
+  reader.readAsDataURL(file)
+}
+
+function updateDesignPreview() {
+  const name = document.getElementById('d-name')?.value || 'RJCD'
+  const bar  = document.getElementById('d-prev-bar')
+  const logo = document.getElementById('d-prev-logo')
+  const kpi  = document.getElementById('d-prev-kpi')
+  const kpiv = document.getElementById('d-prev-kpi-val')
+  if(bar)  bar.style.background = designState.farbe
+  if(logo) logo.innerHTML = designLogoUrl
+    ? `<img src="${designLogoUrl}" style="height:20px;object-fit:contain;vertical-align:middle;margin-right:5px" alt="Logo">${name}`
+    : `${designState.emoji} ${name}`
+  if(kpi)  kpi.style.background = designState.farbe_bg
+  if(kpiv) kpiv.style.color = designState.farbe
+}
+
+async function speichereDesignApp() {
+  const name  = document.getElementById('d-name').value
+  const short = document.getElementById('d-short').value
+  const felder = {
+    firmenname: name,
+    kurzname:   short,
+    farbe:      designState.farbe,
+    farbe_bg:   designState.farbe_bg,
+    emoji:      designState.emoji,
+    logo:       designLogoUrl || '',
+    modus:      designState.modus,
+  }
+  try {
+    for(const [k, v] of Object.entries(felder)) {
+      await speichereDesign(k, v)
+    }
+    // Sofort anwenden
+    wendeDesignAn(felder)
+    // Logo in Kopfleiste aktualisieren
+    const logoEl = document.querySelector('.app-logo')
+    if(logoEl) {
+      logoEl.innerHTML = designLogoUrl
+        ? `<img src="${designLogoUrl}" style="height:22px;object-fit:contain;vertical-align:middle;margin-right:6px" alt="Logo">${name}`
+        : `${designState.emoji} ${name}`
+    }
+    alert('✓ Design gespeichert — gilt jetzt für alle Apps!')
+  } catch(e) {
+    alert('Fehler beim Speichern: ' + e.message)
+  }
+}
+
+async function resetDesignApp() {
+  if(!confirm('Design auf Standard zurücksetzen?')) return
+  const standard = {firmenname:'RJCD Gebäudereinigung',kurzname:'RJCD',farbe:'#185FA5',farbe_bg:'#E6F1FB',emoji:'🏢',logo:'',modus:'auto'}
+  for(const [k,v] of Object.entries(standard)) await speichereDesign(k,v)
+  designLogoUrl = null
+  designState = {farbe:'#185FA5',farbe_bg:'#E6F1FB',emoji:'🏢',logo:'',modus:'auto'}
+  document.getElementById('d-name').value = 'RJCD Gebäudereinigung'
+  document.getElementById('d-short').value = 'RJCD'
+  document.getElementById('d-logo-preview').innerHTML = `<div style="font-size:28px;margin-bottom:4px">🏢</div><div style="font-size:11px;color:var(--text2)">PNG, SVG, JPG · max. 500KB</div>`
+  setDesignColor('#185FA5','#E6F1FB')
+  setDesignModus('auto')
+  wendeDesignAn(standard)
+  updateDesignPreview()
+}
+
 function setView(v) {
   curView = v
-  document.getElementById('view-dispoplan').style.display = v==='dispoplan' ? 'block' : 'none'
-  document.getElementById('view-cockpit').style.display   = v==='cockpit'   ? 'block' : 'none'
-  document.getElementById('view-mitarbeiter').style.display = v==='mitarbeiter' ? 'block' : 'none'
-  document.getElementById('view-objekte').style.display = v==='objekte' ? 'block' : 'none'
+  const views = ['dispoplan','cockpit','mitarbeiter','objekte','design']
+  views.forEach(name => {
+    const el = document.getElementById('view-'+name)
+    if(el) el.style.display = name===v ? 'block' : 'none'
+  })
   document.querySelectorAll('.nav-tab').forEach((tab,i) => {
-    tab.className = 'nav-tab' + (['dispoplan','cockpit','mitarbeiter','objekte'][i]===v?' active':'')
+    tab.className = 'nav-tab' + (views[i]===v?' active':'')
   })
   if(v === 'cockpit') ladeKockpit()
+  if(v === 'design')  initDesign()
 }
 
 function setGridView(v) {
