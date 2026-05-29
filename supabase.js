@@ -42,3 +42,16 @@ async function sbDelete(table, id) {
   if (!res.ok) throw new Error(`Fehler beim Löschen in ${table}: ${res.status}`)
   return true
 }
+
+// Löschen nach beliebigem Filter (z.B. auftrag_id=eq.xyz)
+async function sbDeleteWhere(table, filter) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${filter}`, {
+    method: 'DELETE',
+    headers: HEADERS
+  })
+  // 404 ist ok — bedeutet nichts zu löschen
+  if (!res.ok && res.status !== 404) {
+    throw new Error(`Fehler beim Löschen in ${table}: ${res.status}`)
+  }
+  return true
+}

@@ -713,12 +713,21 @@ async function saveAuftrag() {
 }
 
 async function deleteAuftrag() {
-  if(!editAuftragId || !confirm('Auftrag wirklich löschen?')) return
+  if(!editAuftragId || !confirm('Auftrag wirklich löschen?\n\nAlle zugehörigen Zeiten und Aufgaben werden ebenfalls gelöscht.')) return
   try {
+    // 1. Zuerst Zeiterfassung löschen
+    await sbDeleteWhere('zeiterfassung', `auftrag_id=eq.${editAuftragId}`)
+    // 2. Aufgaben löschen
+    await sbDeleteWhere('aufgaben', `auftrag_id=eq.${editAuftragId}`)
+    // 3. Erinnerungen löschen
+    await sbDeleteWhere('push_erinnerungen', `auftrag_id=eq.${editAuftragId}`)
+    // 4. Push-Log löschen
+    await sbDeleteWhere('push_log', `auftrag_id=eq.${editAuftragId}`)
+    // 5. Jetzt den Auftrag selbst löschen
     await sbDelete('auftraege', editAuftragId)
     closeModal('auftrag-modal')
     await loadWoche()
-  } catch(e) { alert('Fehler: ' + e.message) }
+  } catch(e) { alert('Fehler beim Löschen: ' + e.message) }
 }
 
 function openMaModal(maId) {
