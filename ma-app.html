@@ -348,18 +348,32 @@ function getKW(d){const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDa
 
 // ── LOGIN ─────────────────────────────────────────────────────
 async function initLogin(){
+  // Design laden — Fehler hier blockieren NICHT die Mitarbeiterliste
   try{
-    // Design laden und anwenden
     const d = await ladeDesign()
     wendeDesignAn(d)
-    // Firmenname auf Login-Seite
     const logoEl = document.querySelector('.login-logo')
-    if(logoEl && d.firmenname) logoEl.textContent = d.kurzname || 'RJCD'
+    if(logoEl && d.kurzname) logoEl.textContent = d.kurzname
+  }catch(e){ console.log('Design:', e) }
 
+  // Mitarbeiterliste laden — separat damit Design-Fehler nicht blockieren
+  try{
     const mas=await sbGet('mitarbeiter','aktiv=eq.true&order=nachname&select=id,nachname,vorname,sprache')
     const sel=document.getElementById('l-ma')
-    mas.forEach(m=>{const o=document.createElement('option');o.value=m.id;o.textContent=m.nachname+(m.vorname?', '+m.vorname:'');o.dataset.spr=m.sprache||'de';sel.appendChild(o)})
-  }catch(e){}
+    // Bestehende Optionen außer der ersten ("Bitte wählen") entfernen
+    while(sel.options.length > 1) sel.remove(1)
+    mas.forEach(m=>{
+      const o=document.createElement('option')
+      o.value=m.id
+      o.textContent=m.nachname+(m.vorname?', '+m.vorname:'')
+      o.dataset.spr=m.sprache||'de'
+      sel.appendChild(o)
+    })
+    if(!mas.length) showErr('Keine Mitarbeiter gefunden — bitte SQL-Script ausführen')
+  }catch(e){
+    console.log('Mitarbeiterliste:', e)
+    showErr('Verbindung zu Supabase fehlgeschlagen — bitte Seite neu laden')
+  }
 }
 
 async function login(){
