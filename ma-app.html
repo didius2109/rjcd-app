@@ -649,13 +649,22 @@ function renderAuftragCard(a){
     <div class="a-head">
       <div class="a-obj">${a.objekt.name}</div>
       ${a.objekt.adresse?`<div class="a-adr"><i class="ti ti-map-pin" style="font-size:12px" aria-hidden="true"></i> ${a.objekt.adresse}</div>`:''}
-      ${a.objekt.geo_notiz?`<div style="font-size:12px;color:#4285F4;margin-bottom:4px"><i class="ti ti-info-circle" style="font-size:12px" aria-hidden="true"></i> ${a.objekt.geo_notiz}</div>`:''}
-      ${(a.objekt.latitude||a.objekt.maps_link||a.objekt.adresse)?`
-        <a href="${getMapsUrlMA(a.objekt)}" target="_blank" rel="noopener"
-          style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:500;color:#4285F4;text-decoration:none;margin-bottom:6px;padding:4px 10px;background:#E8F0FE;border-radius:8px">
-          <i class="ti ti-navigation" style="font-size:13px" aria-hidden="true"></i>
-          ${lang==='pl'?'Nawiguj':'Zur Baustelle navigieren'}
-        </a>`:''}
+      ${a.objekt.geo_notiz?`<div style="font-size:12px;color:#4285F4;margin-bottom:6px"><i class="ti ti-info-circle" style="font-size:12px" aria-hidden="true"></i> ${a.objekt.geo_notiz}</div>`:''}
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+        ${(a.objekt.latitude||a.objekt.maps_link)?`
+          <a href="${getMapsUrlMA(a.objekt)}" target="_blank" rel="noopener"
+            style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:500;color:#fff;text-decoration:none;padding:6px 12px;background:#4285F4;border-radius:8px">
+            <i class="ti ti-current-location" style="font-size:13px" aria-hidden="true"></i>
+            ${lang==='pl'?'GPS':'GPS-Punkt'}
+          </a>`:''}
+        ${a.objekt.adresse?`
+          <a href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(a.objekt.adresse)}&travelmode=driving"
+            target="_blank" rel="noopener"
+            style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:500;color:#4285F4;text-decoration:none;padding:6px 12px;background:#E8F0FE;border-radius:8px">
+            <i class="ti ti-map-pin" style="font-size:13px" aria-hidden="true"></i>
+            ${lang==='pl'?'Adres':'Adresse'}
+          </a>`:''}
+      </div>
       <div class="a-meta">
         <span class="pill soll"><i class="ti ti-clock" style="font-size:12px" aria-hidden="true"></i>${a.soll_start||''}${a.soll_ende?'–'+a.soll_ende:''}</span>
         <span class="pill ${statusCls}">${statusTxt}</span>
@@ -862,7 +871,14 @@ async function nextStep(ai){
       if(heuteAuftr.every(a=>{const i=auftraege.indexOf(a);return aStep[i]>=4}))tagFertig=true
     }catch(e){alert(t('fehler')+': '+e.message);return}
   }
-  render();window.scrollTo({top:0,behavior:'smooth'})
+  render()
+  // Zur aktuellen Auftragskarte scrollen — nicht nach oben
+  setTimeout(() => {
+    const karten = document.querySelectorAll('.a-card')
+    if(karten[ai]) {
+      karten[ai].scrollIntoView({behavior:'smooth', block:'nearest'})
+    }
+  }, 50)
 }
 
 // ── EDIT MODAL ────────────────────────────────────────────────
