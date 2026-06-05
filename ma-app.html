@@ -833,8 +833,7 @@ async function nextStep(ai){
         '✅ Auftrag abgeschlossen',
         `${curMa.name}: ${a.objekt.name} · Ende: ${a.zeit?.ist_ende||''}${abwText}`
       )
-      const heute=toISO(new Date())
-      const heuteAuftr=auftraege.filter(a=>a.datum===heute)
+      const heuteAuftr=auftraege.filter(a=>a.datum===toISO(new Date()))
       if(heuteAuftr.every(a=>{const i=auftraege.indexOf(a);return aStep[i]>=4}))tagFertig=true
     }catch(e){alert(t('fehler')+': '+e.message);return}
   }
