@@ -481,7 +481,7 @@ async function ladeAuftraege(){
     const data=await sbGet('auftraege',`mitarbeiter_id=eq.${curMa.id}&datum=gte.${von}&datum=lte.${bis}&order=datum,soll_start&select=id,datum,soll_start,soll_ende,anmerkung,status,objekt_id`)
     const objIds=[...new Set(data.map(a=>a.objekt_id))].join(',')
     let objMap={}
-    if(objIds){const os=await sbGet('objekte',`id=in.(${objIds})&select=id,name,adresse,leistungsbeschreibung`);os.forEach(o=>objMap[o.id]=o)}
+    if(objIds){const os=await sbGet('objekte',`id=in.(${objIds})&select=id,name,adresse,leistungsbeschreibung,latitude,longitude,maps_link,geo_notiz`);os.forEach(o=>objMap[o.id]=o)}
     const aIds=data.map(a=>a.id).join(',')
     let zeitMap={},aufgMap={}
     if(aIds){
@@ -508,6 +508,17 @@ async function ladeAuftraege(){
   }catch(e){
     document.getElementById('main').innerHTML=`<div class="leer"><i class="ti ti-wifi-off" aria-hidden="true"></i><p>${t('fehler')}: ${e.message}</p></div>`
   }
+}
+
+// ── GEODATEN ─────────────────────────────────────────────────
+function getMapsUrlMA(obj) {
+  if(!obj) return '#'
+  if(obj.latitude && obj.longitude)
+    return `https://www.google.com/maps/dir/?api=1&destination=${obj.latitude},${obj.longitude}&travelmode=driving`
+  if(obj.maps_link) return obj.maps_link
+  if(obj.adresse)
+    return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(obj.adresse)}&travelmode=driving`
+  return '#'
 }
 
 // ── RENDER HAUPT ──────────────────────────────────────────────
@@ -638,6 +649,13 @@ function renderAuftragCard(a){
     <div class="a-head">
       <div class="a-obj">${a.objekt.name}</div>
       ${a.objekt.adresse?`<div class="a-adr"><i class="ti ti-map-pin" style="font-size:12px" aria-hidden="true"></i> ${a.objekt.adresse}</div>`:''}
+      ${a.objekt.geo_notiz?`<div style="font-size:12px;color:#4285F4;margin-bottom:4px"><i class="ti ti-info-circle" style="font-size:12px" aria-hidden="true"></i> ${a.objekt.geo_notiz}</div>`:''}
+      ${(a.objekt.latitude||a.objekt.maps_link||a.objekt.adresse)?`
+        <a href="${getMapsUrlMA(a.objekt)}" target="_blank" rel="noopener"
+          style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:500;color:#4285F4;text-decoration:none;margin-bottom:6px;padding:4px 10px;background:#E8F0FE;border-radius:8px">
+          <i class="ti ti-navigation" style="font-size:13px" aria-hidden="true"></i>
+          ${lang==='pl'?'Nawiguj':'Zur Baustelle navigieren'}
+        </a>`:''}
       <div class="a-meta">
         <span class="pill soll"><i class="ti ti-clock" style="font-size:12px" aria-hidden="true"></i>${a.soll_start||''}${a.soll_ende?'–'+a.soll_ende:''}</span>
         <span class="pill ${statusCls}">${statusTxt}</span>
@@ -690,13 +708,20 @@ function renderAuftragCard(a){
       (toMin(na.soll_start) > toMin(a.soll_start))
     )
     const naechstesObjekt = naechsterAuftrag?.objekt
-    const naechsteAdresse = naechstesObjekt?.adresse || ''
     const naechsterName   = naechstesObjekt?.name || ''
 
-    // Google Maps URL
-    const mapsUrl = naechsteAdresse
-      ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(naechsteAdresse)}&travelmode=driving`
-      : ''
+    // Beste Navi-URL ermitteln: GPS > Maps-Link > Adresse
+    function getMapsUrl(obj) {
+      if(!obj) return ''
+      if(obj.latitude && obj.longitude)
+        return `https://www.google.com/maps/dir/?api=1&destination=${obj.latitude},${obj.longitude}&travelmode=driving`
+      if(obj.maps_link) return obj.maps_link
+      if(obj.adresse)
+        return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(obj.adresse)}&travelmode=driving`
+      return ''
+    }
+    const mapsUrl = getMapsUrl(naechstesObjekt)
+    const naechsteAdresse = naechstesObjekt?.adresse || (naechstesObjekt?.latitude ? `${naechstesObjekt.latitude}, ${naechstesObjekt.longitude}` : '')
 
     html+=`<div class="fahrt">
       <div class="fahrt-tit">${t('fahrtTit')}</div>
