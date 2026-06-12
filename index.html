@@ -577,6 +577,13 @@
       </button>
     </div>
     <div style="font-size:10px;color:var(--text3);margin-top:3px">Ab 20km Entfernung zum Objekt wird Fahrzeit als Arbeitszeit angerechnet</div>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:10px;padding:10px 12px;background:var(--amber-bg);border-radius:var(--radius);border:0.5px solid var(--border)">
+      <input type="checkbox" id="mm-fahrzeit-aus" style="width:16px;height:16px;cursor:pointer;accent-color:var(--amber);flex-shrink:0">
+      <div>
+        <div style="font-size:12px;font-weight:500;color:var(--amber-text)">Subunternehmer — keine Fahrzeitanrechnung</div>
+        <div style="font-size:10px;color:var(--amber-text);opacity:.8">Fahrstrecke wird nicht berechnet und nicht als Arbeitszeit angerechnet</div>
+      </div>
+    </div>
     <label>Farbe im Dispoplan</label>
     <select id="mm-farbe">
       <option value="0">Blau</option>
@@ -849,6 +856,7 @@ function renderMaGrid() {
           <div class="card-name">${ma.vorname?ma.vorname+' ':''}${ma.nachname}</div>
           <div class="card-sub">
             <span class="pill" style="background:${ma.sprache==='pl'?'#E1F5EE':'#E6F1FB'};color:${ma.sprache==='pl'?'#085041':'#0C447C'}">${SPR_NAMEN[ma.sprache]||ma.sprache}</span>
+            ${ma.fahrzeit_ausgeschlossen?'<span class="pill" style="background:var(--amber-bg);color:var(--amber-text);margin-left:4px">Subunternehmer</span>':''}
           </div>
         </div>
       </div>
@@ -1088,11 +1096,13 @@ function openMaModal(maId) {
       document.getElementById('mm-spr').value = m.sprache||'de'
       document.getElementById('mm-farbe').value = m.farbe_idx||0
       document.getElementById('mm-heimat').value = m.heimatadresse||''
+      document.getElementById('mm-fahrzeit-aus').checked = m.fahrzeit_ausgeschlossen||false
     }
   } else {
     ['mm-nach','mm-vor','mm-tel','mm-mail','mm-lohn','mm-std','mm-heimat'].forEach(id=>document.getElementById(id).value='')
     document.getElementById('mm-spr').value = 'de'
     document.getElementById('mm-farbe').value = '0'
+    document.getElementById('mm-fahrzeit-aus').checked = false
   }
   document.getElementById('ma-modal').classList.add('open')
 }
@@ -1110,6 +1120,7 @@ async function saveMa() {
     sprache: document.getElementById('mm-spr').value,
     farbe_idx: parseInt(document.getElementById('mm-farbe').value),
     heimatadresse: document.getElementById('mm-heimat').value.trim() || null,
+    fahrzeit_ausgeschlossen: document.getElementById('mm-fahrzeit-aus').checked,
     aktiv: true
   }
   try {
@@ -1749,6 +1760,11 @@ async function pruefeUndSpeichereFahrzeit(auftragId, maId, datum) {
   try {
     const ma = mitarbeiter.find(m => m.id === maId)
     if(!ma?.heimatadresse) return null
+    // Subunternehmer ausschließen
+    if(ma.fahrzeit_ausgeschlossen) {
+      console.log('Subunternehmer — keine Fahrzeitberechnung')
+      return null
+    }
     const auftr = await sbGet('auftraege', `id=eq.${auftragId}&select=objekt_id`)
     if(!auftr.length) return null
     const obj = objekte.find(o => o.id === auftr[0].objekt_id)
