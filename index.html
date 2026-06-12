@@ -569,6 +569,14 @@
       <option value="ro">Rumänisch</option>
       <option value="uk">Ukrainisch</option>
     </select>
+    <label>Heimatadresse</label>
+    <div style="display:flex;gap:6px">
+      <input type="text" id="mm-heimat" placeholder="Straße, PLZ Ort — für Fahrzeitberechnung" style="flex:1">
+      <button onclick="heimatKoordSpeichern()" style="background:none;border:0.5px solid var(--border2);border-radius:var(--radius);padding:6px 10px;cursor:pointer;color:var(--text2);font-size:11px;white-space:nowrap" title="Aktuelle Position als Heimatadresse speichern">
+        <i class="ti ti-current-location" aria-hidden="true"></i>
+      </button>
+    </div>
+    <div style="font-size:10px;color:var(--text3);margin-top:3px">Ab 20km Entfernung zum Objekt wird Fahrzeit als Arbeitszeit angerechnet</div>
     <label>Farbe im Dispoplan</label>
     <select id="mm-farbe">
       <option value="0">Blau</option>
@@ -1031,6 +1039,17 @@ async function saveAuftrag() {
     }
 
     closeModal('auftrag-modal')
+    // Fahrzeit im Hintergrund berechnen (nur neue Aufträge mit Heimatadresse)
+    if(istNeu) {
+      const ma = mitarbeiter.find(m => m.id === maId)
+      if(ma?.heimatadresse) {
+        pruefeUndSpeichereFahrzeit(auftragId, maId, datum).then(ergebnis => {
+          if(ergebnis?.angerechnet) {
+            console.log(`✓ Fahrzeit angerechnet: ${ergebnis.distanz_km}km · ${ergebnis.fahrzeit_min}min`)
+          }
+        })
+      }
+    }
     await loadWoche()
   } catch(e) { alert('Fehler: ' + e.message) }
 }
@@ -1068,9 +1087,10 @@ function openMaModal(maId) {
       document.getElementById('mm-std').value = m.wochenstunden||''
       document.getElementById('mm-spr').value = m.sprache||'de'
       document.getElementById('mm-farbe').value = m.farbe_idx||0
+      document.getElementById('mm-heimat').value = m.heimatadresse||''
     }
   } else {
-    ['mm-nach','mm-vor','mm-tel','mm-mail','mm-lohn','mm-std'].forEach(id=>document.getElementById(id).value='')
+    ['mm-nach','mm-vor','mm-tel','mm-mail','mm-lohn','mm-std','mm-heimat'].forEach(id=>document.getElementById(id).value='')
     document.getElementById('mm-spr').value = 'de'
     document.getElementById('mm-farbe').value = '0'
   }
@@ -1089,6 +1109,7 @@ async function saveMa() {
     wochenstunden: parseInt(document.getElementById('mm-std').value) || null,
     sprache: document.getElementById('mm-spr').value,
     farbe_idx: parseInt(document.getElementById('mm-farbe').value),
+    heimatadresse: document.getElementById('mm-heimat').value.trim() || null,
     aktiv: true
   }
   try {
@@ -1703,6 +1724,56 @@ function toggleCockpitDetail(i) {
 setInterval(() => {
   if(curView === 'cockpit') ladeKockpit()
 }, 60000)
+
+// ── FAHRZEIT-BERECHNUNG ───────────────────────────────────────
+const MAPS_KEY = 'AIzaSyA2FNCIFIAgOmLVVufRb53kxpmt3Erd3sU'
+const FAHRZEIT_GRENZE_KM = 20
+
+async function berechneFahrzeit(vonAdresse, nachAdresse) {
+  try {
+    const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(vonAdresse)}&destinations=${encodeURIComponent(nachAdresse)}&mode=driving&language=de&key=${MAPS_KEY}`
+    const r = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`)
+    const data = await r.json()
+    if(data.rows?.[0]?.elements?.[0]?.status === 'OK') {
+      const el = data.rows[0].elements[0]
+      return {
+        distanz_km:  Math.round(el.distance.value / 100) / 10,
+        fahrzeit_min: Math.round(el.duration.value / 60)
+      }
+    }
+  } catch(e) { console.log('Fahrzeit API:', e) }
+  return null
+}
+
+async function pruefeUndSpeichereFahrzeit(auftragId, maId, datum) {
+  try {
+    const ma = mitarbeiter.find(m => m.id === maId)
+    if(!ma?.heimatadresse) return null
+    const auftr = await sbGet('auftraege', `id=eq.${auftragId}&select=objekt_id`)
+    if(!auftr.length) return null
+    const obj = objekte.find(o => o.id === auftr[0].objekt_id)
+    if(!obj) return null
+    const nachAdresse = obj.adresse || (obj.latitude ? `${obj.latitude},${obj.longitude}` : null)
+    if(!nachAdresse) return null
+    const ergebnis = await berechneFahrzeit(ma.heimatadresse, nachAdresse)
+    if(!ergebnis) return null
+    const angerechnet = ergebnis.distanz_km >= FAHRZEIT_GRENZE_KM
+    await sbPost('fahrtzeiten', {
+      auftrag_id: auftragId, mitarbeiter_id: maId, datum,
+      von_adresse: ma.heimatadresse, nach_adresse: nachAdresse,
+      distanz_km: ergebnis.distanz_km, fahrzeit_min: ergebnis.fahrzeit_min,
+      angerechnet, angerechnet_min: angerechnet ? ergebnis.fahrzeit_min : 0
+    })
+    return { ...ergebnis, angerechnet }
+  } catch(e) { console.log('Fahrzeit speichern:', e); return null }
+}
+
+function heimatKoordSpeichern() {
+  if(!navigator.geolocation) { alert('GPS nicht verfügbar'); return }
+  navigator.geolocation.getCurrentPosition(pos => {
+    document.getElementById('mm-heimat').value = `${pos.coords.latitude.toFixed(6)},${pos.coords.longitude.toFixed(6)}`
+  }, err => alert('GPS Fehler: ' + err.message))
+}
 
 // ── GEODATEN ─────────────────────────────────────────────────
 function standortJetztSpeichern() {
