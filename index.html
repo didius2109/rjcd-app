@@ -222,6 +222,7 @@
       <nav class="nav-tabs">
         <button class="nav-tab active" onclick="setView('dispoplan')"><i class="ti ti-calendar-week"></i> Dispoplan</button>
         <button class="nav-tab" onclick="setView('cockpit')"><i class="ti ti-activity"></i> Cockpit</button>
+        <button class="nav-tab" onclick="setView('export')"><i class="ti ti-file-export"></i> Export</button>
         <button class="nav-tab" onclick="setView('mitarbeiter')"><i class="ti ti-users"></i> Mitarbeiter</button>
         <button class="nav-tab" onclick="setView('objekte')"><i class="ti ti-building"></i> Objekte</button>
         <button class="nav-tab" onclick="setView('design')"><i class="ti ti-palette"></i> Design</button>
@@ -310,6 +311,50 @@
       <div class="kpi-grid" id="cockpit-kpi"></div>
       <div style="font-size:13px;font-weight:500;margin-bottom:10px;color:var(--text2)">Alle Aufträge heute</div>
       <div id="cockpit-liste"></div>
+    </div>
+
+    <!-- EXPORT VIEW -->
+    <div id="view-export" style="display:none">
+      <div style="font-size:16px;font-weight:500;margin-bottom:4px">Export & Berichte</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:16px">Für Finanzamt, Rentenversicherung, Steuerberater und interne Auswertungen</div>
+      <div style="background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:14px;margin-bottom:14px;display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end">
+        <div>
+          <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Von</label>
+          <input type="date" id="ex-von" style="width:100%;font-size:13px;padding:7px 10px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text)">
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Bis</label>
+          <input type="date" id="ex-bis" style="width:100%;font-size:13px;padding:7px 10px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text)">
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Mitarbeiter</label>
+          <select id="ex-ma" style="width:100%;font-size:13px;padding:7px 10px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text)">
+            <option value="">Alle Mitarbeiter</option>
+          </select>
+        </div>
+        <button onclick="ladeExportDaten()" style="background:var(--text);color:var(--bg2);border:none;border-radius:var(--radius);padding:8px 16px;font-size:13px;cursor:pointer;white-space:nowrap">Laden</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px" id="ex-typen"></div>
+      <div style="background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius-lg);overflow:hidden">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:0.5px solid var(--border);background:var(--bg3)">
+          <div style="font-size:13px;font-weight:500" id="ex-titel">Bitte Zeitraum wählen und laden</div>
+          <div style="display:flex;gap:6px">
+            <button onclick="exportCSV()" style="display:flex;align-items:center;gap:5px;font-size:12px;padding:5px 12px;border-radius:var(--radius);border:0.5px solid var(--border2);background:none;cursor:pointer;color:var(--text2)">
+              <i class="ti ti-file-spreadsheet" aria-hidden="true"></i> CSV
+            </button>
+            <button onclick="window.print()" style="display:flex;align-items:center;gap:5px;font-size:12px;padding:5px 12px;border-radius:var(--radius);border:0.5px solid var(--border2);background:none;cursor:pointer;color:var(--text2)">
+              <i class="ti ti-file-type-pdf" aria-hidden="true"></i> Drucken
+            </button>
+          </div>
+        </div>
+        <div style="overflow-x:auto">
+          <table id="ex-table" style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead id="ex-thead"></thead>
+            <tbody id="ex-tbody"><tr><td colspan="14" style="padding:32px;text-align:center;color:var(--text2)">Zeitraum wählen und auf "Laden" klicken</td></tr></tbody>
+          </table>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:10px 14px;border-top:0.5px solid var(--border);background:var(--bg3)" id="ex-sumbar"></div>
+      </div>
     </div>
 
     <!-- DESIGN VIEW -->
@@ -471,15 +516,11 @@
       <div style="display:flex;gap:6px;margin-bottom:4px">
         <input type="text" id="am-obj-suche" placeholder="🔍 Buchstabe oder Name..."
           style="flex:1;font-size:13px;padding:7px 10px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text)"
-          oninput="filterObjekte(this.value)"
-          onfocus="filterObjekte(this.value)"
-          autocomplete="off">
+          oninput="filterObjekte(this.value)" onfocus="filterObjekte(this.value)" autocomplete="off">
         <button onmousedown="event.preventDefault()" onclick="clearObjSuche()" style="background:none;border:0.5px solid var(--border2);border-radius:var(--radius);padding:6px 10px;cursor:pointer;color:var(--text2);font-size:11px">✕</button>
       </div>
-      <!-- Eigenes Dropdown statt Browser-Autocomplete -->
       <div id="am-obj-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--bg2);border:0.5px solid var(--border2);border-radius:var(--radius);z-index:100;max-height:200px;overflow-y:auto;box-shadow:0 4px 16px rgba(0,0,0,0.12)"></div>
     </div>
-    <!-- Verstecktes Select für den Wert -->
     <input type="hidden" id="am-obj">
     <div id="am-obj-selected" style="font-size:12px;color:var(--text2);margin-bottom:4px;min-height:16px"></div>
     <label>Datum</label><input type="date" id="am-datum">
@@ -851,8 +892,7 @@ function openAuftragModal(auftragId, maId, datum) {
   document.getElementById('am-ma').innerHTML = mitarbeiter.map(m=>
     `<option value="${m.id}">${m.nachname}${m.vorname?' '+m.vorname:''}</option>`).join('')
   // Suchfeld und Dropdown zurücksetzen
-  const sucheEl = document.getElementById('am-obj-suche')
-  if(sucheEl) sucheEl.value = ''
+  document.getElementById('am-obj-suche').value = ''
   document.getElementById('am-obj').value = ''
   document.getElementById('am-obj-selected').textContent = ''
   document.getElementById('am-obj-dropdown').style.display = 'none'
@@ -861,11 +901,10 @@ function openAuftragModal(auftragId, maId, datum) {
     const a = auftraege.find(x=>x.id===auftragId)
     if(a) {
       document.getElementById('am-ma').value = a.mitarbeiter_id
-      // Objekt setzen und Namen anzeigen
       document.getElementById('am-obj').value = a.objekt_id
       const obj = objekte.find(o=>o.id===a.objekt_id)
       if(obj) {
-        if(sucheEl) sucheEl.value = obj.name
+        document.getElementById('am-obj-suche').value = obj.name
         document.getElementById('am-obj-selected').textContent = '✓ ' + obj.name
       }
       document.getElementById('am-datum').value = a.datum
@@ -882,9 +921,7 @@ function openAuftragModal(auftragId, maId, datum) {
     document.getElementById('am-anm').value = ''
   }
   updateKalk()
-
-  // Dropdown schließen bei Klick außen
-  document.getElementById('am-obj-suche').onblur = schliesseObjDropdown
+  document.getElementById('am-obj-suche').onblur = () => setTimeout(()=>{ document.getElementById('am-obj-dropdown').style.display='none' }, 150)
   document.getElementById('am-start').oninput = updateKalk
   document.getElementById('am-end').oninput = updateKalk
   document.getElementById('auftrag-modal').classList.add('open')
@@ -1193,55 +1230,21 @@ setInterval(pruefeErinnerungen, 10 * 60 * 1000)
 
 // ── OBJEKT SUCHE ─────────────────────────────────────────────
 function filterObjekte(suche) {
+  const sel = document.getElementById('am-obj')
+  const curVal = sel.value
   const s = suche.trim().toLowerCase()
-  const dropdown = document.getElementById('am-obj-dropdown')
-  const gefunden = objekte.filter(o =>
-    !s || o.name.toLowerCase().startsWith(s) || o.name.toLowerCase().includes(s)
-  )
-
-  if(!s) {
-    // Alle anzeigen wenn Feld leer
-    dropdown.innerHTML = gefunden.map(o => `
-      <div onmousedown="waehleObjekt('${o.id}','${o.name.replace(/'/g,"\\'")}')"
-        style="padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:0.5px solid var(--border)"
-        onmouseover="this.style.background='var(--bg3)'"
-        onmouseout="this.style.background=''">${o.name}</div>`).join('')
-    dropdown.style.display = 'block'
-  } else if(gefunden.length) {
-    dropdown.innerHTML = gefunden.map(o => `
-      <div onmousedown="waehleObjekt('${o.id}','${o.name.replace(/'/g,"\\'")}')"
-        style="padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:0.5px solid var(--border)"
-        onmouseover="this.style.background='var(--bg3)'"
-        onmouseout="this.style.background=''">${o.name}</div>`).join('')
-    dropdown.style.display = 'block'
-  } else {
-    dropdown.innerHTML = '<div style="padding:8px 12px;font-size:12px;color:var(--text2)">Kein Objekt gefunden</div>'
-    dropdown.style.display = 'block'
+  sel.innerHTML = objekte
+    .filter(o => !s || o.name.toLowerCase().startsWith(s) || o.name.toLowerCase().includes(s))
+    .map(o => `<option value="${o.id}" ${o.id===curVal?'selected':''}>${o.name}</option>`)
+    .join('')
+  // Ersten Eintrag wählen wenn aktueller nicht mehr sichtbar
+  if(!sel.value && sel.options.length > 0) {
+    sel.selectedIndex = 0
+    updateKalk()
+    if(!document.getElementById('auftrag-modal-title').textContent.includes('bearbeiten')) {
+      ladeLeistungsbeschreibung()
+    }
   }
-}
-
-function waehleObjekt(id, name) {
-  document.getElementById('am-obj').value = id
-  document.getElementById('am-obj-suche').value = name
-  document.getElementById('am-obj-selected').textContent = '✓ ' + name
-  document.getElementById('am-obj-dropdown').style.display = 'none'
-  updateKalk()
-  if(!document.getElementById('auftrag-modal-title').textContent.includes('bearbeiten')) {
-    ladeLeistungsbeschreibung()
-  }
-}
-
-function schliesseObjDropdown() {
-  setTimeout(() => {
-    document.getElementById('am-obj-dropdown').style.display = 'none'
-  }, 150)
-}
-
-function clearObjSuche() {
-  document.getElementById('am-obj-suche').value = ''
-  document.getElementById('am-obj').value = ''
-  document.getElementById('am-obj-selected').textContent = ''
-  filterObjekte('')
 }
 
 function clearObjSuche() {
@@ -1894,9 +1897,150 @@ async function resetDesignApp() {
   updateDesignPreview()
 }
 
+// ── OBJEKT SUCHE ─────────────────────────────────────────────
+function filterObjekte(suche) {
+  const s = suche.trim().toLowerCase()
+  const dropdown = document.getElementById('am-obj-dropdown')
+  const gefunden = objekte.filter(o => !s || o.name.toLowerCase().startsWith(s) || o.name.toLowerCase().includes(s))
+  dropdown.innerHTML = gefunden.length
+    ? gefunden.map(o => `<div onmousedown="waehleObjekt('${o.id}','${o.name.replace(/'/g,"\\'")}');event.preventDefault()"
+        style="padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:0.5px solid var(--border)"
+        onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">${o.name}</div>`).join('')
+    : '<div style="padding:8px 12px;font-size:12px;color:var(--text2)">Kein Objekt gefunden</div>'
+  dropdown.style.display = 'block'
+}
+function waehleObjekt(id, name) {
+  document.getElementById('am-obj').value = id
+  document.getElementById('am-obj-suche').value = name
+  document.getElementById('am-obj-selected').textContent = '✓ ' + name
+  document.getElementById('am-obj-dropdown').style.display = 'none'
+  updateKalk()
+  if(!document.getElementById('auftrag-modal-title').textContent.includes('bearbeiten')) ladeLeistungsbeschreibung()
+}
+function clearObjSuche() {
+  document.getElementById('am-obj-suche').value = ''
+  document.getElementById('am-obj').value = ''
+  document.getElementById('am-obj-selected').textContent = ''
+  filterObjekte('')
+}
+
+// ── EXPORT & BERICHTE ─────────────────────────────────────────
+let exportTyp = 'arbeitszeit', exportDaten = []
+const EXPORT_TYPEN = [
+  { id:'arbeitszeit', label:'Arbeitszeitnachweis', icon:'ti-clock', farbe:'#E1F5EE', farbeTxt:'#085041', beschreibung:'Soll/Ist-Zeiten · Pflicht nach MiLoG',
+    cols:['Datum','KW','Tag','Mitarbeiter','Objekt','Soll-Bgn','Soll-End','Soll-h','Ist-Bgn','Ist-End','Ist-h','Abw.','Begründung','Status'] },
+  { id:'lohn', label:'Lohnabrechnung', icon:'ti-currency-euro', farbe:'#FAEEDA', farbeTxt:'#633806', beschreibung:'Stunden & Kosten für Steuerberater',
+    cols:['Mitarbeiter','Soll-Std','Ist-Std','Stundenlohn','Lohnkosten','Abweichungen'] },
+  { id:'umsatz', label:'Umsatz je Objekt', icon:'ti-building', farbe:'#E6F1FB', farbeTxt:'#0C447C', beschreibung:'Leistungen & Margen je Kunde',
+    cols:['Objekt','Einsätze','Stunden','Pauschale','Anteil','Lohnkosten','Marge%'] },
+  { id:'fahrt', label:'Fahrtnachweis', icon:'ti-car', farbe:'#EDE9FE', farbeTxt:'#3C3489', beschreibung:'Fahrten für Rentenversicherung',
+    cols:['Datum','Mitarbeiter','Ende','Fahrt nach','Abfahrt'] },
+  { id:'abweichung', label:'Abweichungsprotokoll', icon:'ti-alert-triangle', farbe:'#FAECE7', farbeTxt:'#712B13', beschreibung:'Alle Abweichungen mit Begründung',
+    cols:['Datum','Mitarbeiter','Objekt','Soll-Ende','Ist-Ende','Abw.','Begründung'] },
+  { id:'gesamt', label:'Gesamtbericht', icon:'ti-file-text', farbe:'#EAF3DE', farbeTxt:'#27500A', beschreibung:'Monatszusammenfassung',
+    cols:['Bereich','Wert','Info'] },
+]
+function initExport() {
+  const heute = new Date()
+  document.getElementById('ex-von').value = toISO(new Date(heute.getFullYear(), heute.getMonth(), 1))
+  document.getElementById('ex-bis').value = toISO(new Date(heute.getFullYear(), heute.getMonth()+1, 0))
+  const sel = document.getElementById('ex-ma')
+  sel.innerHTML = '<option value="">Alle Mitarbeiter</option>'
+  mitarbeiter.forEach(m => { const o=document.createElement('option'); o.value=m.id; o.textContent=m.nachname+(m.vorname?' '+m.vorname:''); sel.appendChild(o) })
+  document.getElementById('ex-typen').innerHTML = EXPORT_TYPEN.map(t => `
+    <div onclick="setExportTyp('${t.id}')" id="extyp-${t.id}"
+      style="background:var(--bg2);border:${t.id===exportTyp?'1.5px solid var(--text)':'0.5px solid var(--border)'};border-radius:var(--radius-lg);padding:12px;cursor:pointer">
+      <div style="width:32px;height:32px;border-radius:var(--radius);background:${t.farbe};display:flex;align-items:center;justify-content:center;margin-bottom:8px">
+        <i class="ti ${t.icon}" style="font-size:15px;color:${t.farbeTxt}" aria-hidden="true"></i>
+      </div>
+      <div style="font-size:12px;font-weight:500;margin-bottom:3px">${t.label}</div>
+      <div style="font-size:10px;color:var(--text2)">${t.beschreibung}</div>
+    </div>`).join('')
+}
+function setExportTyp(typ) {
+  exportTyp = typ
+  document.querySelectorAll('[id^="extyp-"]').forEach(el => {
+    el.style.border = el.id==='extyp-'+typ ? '1.5px solid var(--text)' : '0.5px solid var(--border)'
+  })
+  if(exportDaten.length) renderExportTabelle()
+}
+async function ladeExportDaten() {
+  const von=document.getElementById('ex-von').value, bis=document.getElementById('ex-bis').value
+  const maId=document.getElementById('ex-ma').value
+  if(!von||!bis){alert('Bitte Zeitraum wählen');return}
+  document.getElementById('ex-tbody').innerHTML='<tr><td colspan="14" style="padding:24px;text-align:center;color:var(--text2)"><div class="loading"><div class="spinner"></div> Lade...</div></td></tr>'
+  try {
+    let filter=`datum=gte.${von}&datum=lte.${bis}&order=datum,soll_start`
+    if(maId) filter+=`&mitarbeiter_id=eq.${maId}`
+    exportDaten = await sbGet('auftraege', filter+'&select=*')
+    if(exportDaten.length) {
+      const ids=exportDaten.map(a=>a.id).join(',')
+      const zeiten=await sbGet('zeiterfassung',`auftrag_id=in.(${ids})&select=*`)
+      const zm={}; zeiten.forEach(z=>zm[z.auftrag_id]=z)
+      exportDaten.forEach(a=>a.zeit=zm[a.id]||null)
+    }
+    renderExportTabelle()
+  } catch(e) { document.getElementById('ex-tbody').innerHTML=`<tr><td colspan="14" style="padding:16px;color:var(--red-text)">${e.message}</td></tr>` }
+}
+function renderExportTabelle() {
+  const von=document.getElementById('ex-von').value, bis=document.getElementById('ex-bis').value
+  const typ=EXPORT_TYPEN.find(t=>t.id===exportTyp)
+  document.getElementById('ex-titel').textContent=`${typ.label} · ${von.split('-').reverse().join('.')} – ${bis.split('-').reverse().join('.')}`
+  document.getElementById('ex-thead').innerHTML='<tr>'+typ.cols.map(c=>`<th style="text-align:left;padding:7px 10px;font-size:10px;font-weight:500;color:var(--text2);border-bottom:0.5px solid var(--border);background:var(--bg3);white-space:nowrap">${c}</th>`).join('')+'</tr>'
+  let rows=[], sumbar=[]
+  if(exportTyp==='arbeitszeit') {
+    rows=exportDaten.map(a=>{
+      const ma=mitarbeiter.find(m=>m.id===a.mitarbeiter_id), obj=objekte.find(o=>o.id===a.objekt_id)
+      const z=a.zeit, d=parseDatum(a.datum)
+      return [a.datum.split('-').reverse().join('.'), 'KW'+getKW(d), TAGE_KURZ[d.getDay()===0?6:d.getDay()-1],
+        ma?.nachname||'?', obj?.name||'?', a.soll_start||'—', a.soll_ende||'—', calcH(a.soll_start,a.soll_ende).toFixed(2),
+        z?.ist_start||'—', z?.ist_ende||'—', z?calcH(z.ist_start,z.ist_ende).toFixed(2):'—',
+        z?.abweichung_minuten??'—', z?.abweichung_begruendung||'', a.status||'geplant']
+    })
+    const sh=exportDaten.reduce((s,a)=>s+calcH(a.soll_start,a.soll_ende),0)
+    const ih=exportDaten.reduce((s,a)=>s+(a.zeit?calcH(a.zeit.ist_start,a.zeit.ist_ende):0),0)
+    sumbar=[{l:'Einträge',v:exportDaten.length},{l:'Soll-Stunden',v:sh.toFixed(1)+'h'},{l:'Ist-Stunden',v:ih.toFixed(1)+'h'},{l:'Abweichungen',v:exportDaten.filter(a=>a.zeit?.abweichung_minuten&&Math.abs(a.zeit.abweichung_minuten)>5).length}]
+  } else if(exportTyp==='abweichung') {
+    const d=exportDaten.filter(a=>a.zeit?.abweichung_minuten&&Math.abs(a.zeit.abweichung_minuten)>5)
+    rows=d.map(a=>{const ma=mitarbeiter.find(m=>m.id===a.mitarbeiter_id),obj=objekte.find(o=>o.id===a.objekt_id)
+      return [a.datum.split('-').reverse().join('.'),ma?.nachname||'?',obj?.name||'?',a.soll_ende||'—',a.zeit?.ist_ende||'—',(a.zeit.abweichung_minuten>0?'+':'')+a.zeit.abweichung_minuten+' min',a.zeit?.abweichung_begruendung||'—']})
+    sumbar=[{l:'Abweichungen',v:d.length},{l:'Gesamt-Min',v:d.reduce((s,a)=>s+Math.abs(a.zeit?.abweichung_minuten||0),0)},{l:'Ø Min',v:d.length?(d.reduce((s,a)=>s+Math.abs(a.zeit?.abweichung_minuten||0),0)/d.length).toFixed(0):'—'},{l:'Mit Begründung',v:d.filter(a=>a.zeit?.abweichung_begruendung).length}]
+  } else if(exportTyp==='lohn') {
+    const mm={}; exportDaten.forEach(a=>{if(!mm[a.mitarbeiter_id])mm[a.mitarbeiter_id]={soll:0,ist:0}; mm[a.mitarbeiter_id].soll+=calcH(a.soll_start,a.soll_ende); mm[a.mitarbeiter_id].ist+=(a.zeit?calcH(a.zeit.ist_start,a.zeit.ist_ende):0)})
+    rows=Object.entries(mm).map(([id,v])=>{const ma=mitarbeiter.find(m=>m.id===id),l=ma?.stundenlohn||14; return [ma?.nachname||'?',v.soll.toFixed(2)+'h',v.ist>0?v.ist.toFixed(2)+'h':'—',l.toFixed(2)+'€/h',fmtEur(v.soll*l),exportDaten.filter(a=>a.mitarbeiter_id===id&&a.zeit?.abweichung_minuten&&Math.abs(a.zeit.abweichung_minuten)>5).length]})
+    const tl=rows.reduce((s,r)=>s+parseFloat((r[4]||'0').replace(/[^0-9,]/g,'').replace(',','.')),0)
+    sumbar=[{l:'Mitarbeiter',v:rows.length},{l:'Soll-Stunden',v:exportDaten.reduce((s,a)=>s+calcH(a.soll_start,a.soll_ende),0).toFixed(1)+'h'},{l:'Lohnkosten',v:fmtEur(tl)},{l:'Ø Stundenlohn',v:'14,00€'}]
+  } else if(exportTyp==='umsatz') {
+    const om={}; exportDaten.forEach(a=>{if(!om[a.objekt_id])om[a.objekt_id]={e:0,h:0}; om[a.objekt_id].e++; om[a.objekt_id].h+=calcH(a.soll_start,a.soll_ende)})
+    rows=Object.entries(om).map(([id,v])=>{const o=objekte.find(x=>x.id===id),ss=o?.monatsstunden?(o.monatspreis/o.monatsstunden):0,u=ss*v.h,l=v.h*14,m=u>0?Math.round((u-l)/u*100):0
+      return [o?.name||'?',v.e+'×',v.h.toFixed(1)+'h',o?.monatspreis?fmtEur(o.monatspreis):'—',u>0?fmtEur(u):'—',fmtEur(l),m>0?m+'%':'—']}).sort((a,b)=>b[3]?.localeCompare?.(a[3])||0)
+    sumbar=[{l:'Objekte',v:rows.length},{l:'Stunden',v:exportDaten.reduce((s,a)=>s+calcH(a.soll_start,a.soll_ende),0).toFixed(1)+'h'},{l:'Lohnkosten',v:fmtEur(exportDaten.reduce((s,a)=>s+calcH(a.soll_start,a.soll_ende)*14,0))},{l:'Objekte aktiv',v:new Set(exportDaten.map(a=>a.objekt_id)).size}]
+  } else if(exportTyp==='fahrt') {
+    const d=exportDaten.filter(a=>a.zeit?.fahrt_ziel&&a.zeit?.fahrt_start)
+    rows=d.map(a=>{const ma=mitarbeiter.find(m=>m.id===a.mitarbeiter_id); return [a.datum.split('-').reverse().join('.'),ma?.nachname||'?',a.zeit?.ist_ende||'—',a.zeit?.fahrt_ziel||'—',a.zeit?.fahrt_start||'—']})
+    sumbar=[{l:'Fahrten',v:d.length},{l:'Mitarbeiter',v:new Set(d.map(a=>a.mitarbeiter_id)).size},{l:'Nach Hause',v:d.filter(a=>a.zeit?.fahrt_ziel==='Zuhause').length},{l:'Zu Objekt',v:d.filter(a=>a.zeit?.fahrt_ziel!=='Zuhause').length}]
+  } else if(exportTyp==='gesamt') {
+    const sh=exportDaten.reduce((s,a)=>s+calcH(a.soll_start,a.soll_ende),0)
+    const absch=exportDaten.filter(a=>a.status==='abgeschlossen').length
+    const mu=Array.from(new Set(exportDaten.map(a=>a.objekt_id))).reduce((s,id)=>s+(objekte.find(o=>o.id===id)?.monatspreis||0),0)
+    rows=[['Aufträge gesamt',exportDaten.length,'im Zeitraum'],['Abgeschlossen',absch,Math.round(absch/(exportDaten.length||1)*100)+'%'],['Soll-Stunden',sh.toFixed(1)+'h','alle MA'],['Aktive Objekte',new Set(exportDaten.map(a=>a.objekt_id)).size,''],['Monatsumsatz',fmtEur(mu),'Hochrechnung'],['Lohnkosten',fmtEur(sh*14),'ca. 14€/h'],['Rohertrag',mu>0?Math.round((mu-sh*14)/mu*100)+'%':'—','nach Lohnkosten'],['Abweichungen',exportDaten.filter(a=>a.zeit?.abweichung_minuten&&Math.abs(a.zeit.abweichung_minuten)>5).length,'mit Begründung']]
+  }
+  document.getElementById('ex-tbody').innerHTML=rows.length
+    ? rows.map(r=>'<tr>'+r.map(c=>`<td style="padding:6px 10px;border-bottom:0.5px solid var(--border);white-space:nowrap">${c??'—'}</td>`).join('')+'</tr>').join('')
+    : '<tr><td colspan="14" style="padding:24px;text-align:center;color:var(--text2)">Keine Daten</td></tr>'
+  document.getElementById('ex-sumbar').innerHTML=sumbar.map(s=>`<div><div style="font-size:10px;color:var(--text2);margin-bottom:2px">${s.l}</div><div style="font-size:15px;font-weight:500">${s.v}</div></div>`).join('')
+  window._exportRows=rows; window._exportCols=typ.cols
+}
+function exportCSV() {
+  if(!window._exportRows?.length){alert('Bitte zuerst Daten laden');return}
+  const csv=[window._exportCols,...window._exportRows].map(r=>r.map(v=>`"${(v??'').toString().replace(/"/g,'""')}"`).join(';')).join('\n')
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}))
+  a.download=`RJCD_${exportTyp}_${document.getElementById('ex-von').value}_${document.getElementById('ex-bis').value}.csv`; a.click()
+}
+
 function setView(v) {
   curView = v
-  const views = ['dispoplan','cockpit','mitarbeiter','objekte','design']
+  const views = ['dispoplan','cockpit','export','mitarbeiter','objekte','design']
   views.forEach(name => {
     const el = document.getElementById('view-'+name)
     if(el) el.style.display = name===v ? 'block' : 'none'
@@ -1906,6 +2050,7 @@ function setView(v) {
   })
   if(v === 'cockpit') ladeKockpit()
   if(v === 'design')  initDesign()
+  if(v === 'export')  initExport()
 }
 
 function setGridView(v) {
