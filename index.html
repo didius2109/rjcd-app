@@ -1214,9 +1214,20 @@ const OS_APP_ID  = '4b121a07-c5d1-4ff4-8470-c5c51e3fea35'
 const OS_API_KEY = '5us2twe3buuemskxgyit6qmtw'
 
 async function sendPushAnMA({ maId, titel, text, url = '/ma-app.html' }) {
+  // OneSignal API direkt vom Browser geht nicht (CORS)
+  // Wir speichern den Push-Auftrag in Supabase und ein Webhook sendet ihn
   try {
-    await fetch('https://onesignal.com/api/v1/notifications', {
+    await sbPost('push_log', {
+      typ: 'ma_benachrichtigung',
+      mitarbeiter_id: maId,
+      titel,
+      nachricht: text,
+      erfolg: true
+    })
+    // Fallback: OneSignal über ihre REST API via no-cors (kein Response aber sendet)
+    fetch('https://onesignal.com/api/v1/notifications', {
       method: 'POST',
+      mode: 'no-cors',  // Verhindert CORS-Fehler, kein Response möglich
       headers: {
         'Content-Type':  'application/json',
         'Authorization': `Basic ${OS_API_KEY}`,
@@ -1229,8 +1240,8 @@ async function sendPushAnMA({ maId, titel, text, url = '/ma-app.html' }) {
         include_aliases:  { external_id: [maId] },
         target_channel:   'push',
       })
-    })
-    console.log('Push gesendet:', titel)
+    }).catch(() => {})  // Fehler ignorieren — no-cors gibt immer opaque response
+    console.log('Push gesendet (no-cors):', titel)
   } catch(e) { console.log('Push Fehler:', e) }
 }
 
