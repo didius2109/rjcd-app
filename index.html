@@ -643,6 +643,8 @@ function getMonday(offset = 0) {
 }
 function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate()+n); return r }
 function fmt(d) { return d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'}) }
+// Datum-String "2026-05-28" timezone-sicher in Date umwandeln
+function parseDatum(s) { const [y,m,d] = s.split('-').map(Number); return new Date(y,m-1,d) }
 function getKW(d) {
   const t = new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()))
   t.setUTCDate(t.getUTCDate()+4-(t.getUTCDay()||7))
