@@ -388,7 +388,7 @@ async function login(){
 
   // OneSignal: Push-Berechtigung anfragen und ID in Supabase speichern
   registrierePush(curMa.id)
-
+  startRefresh()
   await ladeAuftraege()
 }
 
@@ -396,6 +396,7 @@ function showErr(msg){const el=document.getElementById('l-err');el.textContent=m
 
 function logout(){
   curMa=null;tagFertig=false;auftraege=[];zeitIds={};aufgChecked={};aStep={}
+  stopRefresh()
   document.getElementById('login').style.display='flex'
   document.getElementById('app').classList.remove('show')
   document.getElementById('l-ma').value='';document.getElementById('l-pin').value=''
@@ -936,6 +937,116 @@ function closeInstall(){document.getElementById('install-banner').classList.remo
 // Modal außen schließen
 document.getElementById('edit-modal').addEventListener('click',e=>{if(e.target.id==='edit-modal')closeEditModal()})
 document.getElementById('l-pin').addEventListener('keydown',e=>{if(e.key==='Enter')login()})
+
+// ── AUTO-REFRESH ──────────────────────────────────────────────
+// Alle 60 Sekunden prüfen ob neue Aufträge vorhanden sind
+let refreshInterval = null
+let letzteAnzahl = 0
+
+async function autoRefresh() {
+  if(!curMa) return  // Nicht eingeloggt — nichts tun
+  try {
+    const heute = toISO(new Date())
+    const von   = toISO(addDays(new Date(), -7))
+    const bis   = toISO(addDays(new Date(), 14))
+    // Nur Anzahl prüfen — schnell und ohne Flackern
+    const data = await sbGet('auftraege',
+      `mitarbeiter_id=eq.${curMa.id}&datum=gte.${von}&datum=lte.${bis}&select=id,status`)
+
+    const neueAnzahl = data.length
+    const statusHash = data.map(a=>a.id+a.status).join('|')
+
+    if(letzteAnzahl === 0) {
+      // Erster Check nach Login — Basis setzen
+      letzteAnzahl = neueAnzahl
+      window._statusHash = statusHash
+      return
+    }
+
+    // Neuer Auftrag oder Status-Änderung
+    if(neueAnzahl !== letzteAnzahl || statusHash !== window._statusHash) {
+      letzteAnzahl = neueAnzahl
+      window._statusHash = statusHash
+      // Daten neu laden ohne Ladeanimation
+      await ladeAuftraegeLeise()
+    }
+  } catch(e) { /* Netzwerkfehler beim Refresh — ignorieren */ }
+}
+
+// Aufträge leise neu laden ohne Ladebalken
+async function ladeAuftraegeLeise() {
+  try {
+    const von = toISO(addDays(new Date(), -7))
+    const bis = toISO(addDays(new Date(), 14))
+    const data = await sbGet('auftraege',
+      `mitarbeiter_id=eq.${curMa.id}&datum=gte.${von}&datum=lte.${bis}&order=datum,soll_start&select=id,datum,soll_start,soll_ende,anmerkung,status,objekt_id`)
+
+    const objIds = [...new Set(data.map(a=>a.objekt_id))].join(',')
+    let objMap = {}
+    if(objIds) {
+      const os = await sbGet('objekte', `id=in.(${objIds})&select=id,name,adresse,leistungsbeschreibung,latitude,longitude,maps_link,geo_notiz`)
+      os.forEach(o => objMap[o.id] = o)
+    }
+    const aIds = data.map(a=>a.id).join(',')
+    let zeitMap = {}, aufgMap = {}
+    if(aIds) {
+      const z = await sbGet('zeiterfassung', `auftrag_id=in.(${aIds})&select=id,auftrag_id,ist_start,ist_ende,abweichung_minuten,abweichung_begruendung,fahrt_ziel`)
+      z.forEach(z => zeitMap[z.auftrag_id] = z)
+      const ag = await sbGet('aufgaben', `auftrag_id=in.(${aIds})&order=reihenfolge&select=id,auftrag_id,beschreibung,erledigt`)
+      ag.forEach(a => { if(!aufgMap[a.auftrag_id]) aufgMap[a.auftrag_id] = []; aufgMap[a.auftrag_id].push(a) })
+    }
+
+    // Neue Aufträge — nur hinzufügen wenn noch nicht vorhanden
+    const vorhandeneIds = new Set(auftraege.map(a=>a.id))
+    let neueAuftraege = false
+    data.forEach((a, i) => {
+      if(!vorhandeneIds.has(a.id)) {
+        auftraege.push({...a, objekt:objMap[a.objekt_id]||{name:'?'}, aufgaben:aufgMap[a.id]||[], zeit:zeitMap[a.id]||null})
+        aStep[auftraege.length-1] = 0
+        aufgChecked[auftraege.length-1] = []
+        neueAuftraege = true
+      }
+    })
+
+    // Status-Änderungen aktualisieren
+    auftraege.forEach((a, i) => {
+      const neu = data.find(d => d.id === a.id)
+      if(neu && neu.status !== a.status) {
+        auftraege[i].status = neu.status
+      }
+    })
+
+    if(neueAuftraege) {
+      // Kleiner Hinweis dass neue Aufträge da sind
+      const hinweis = document.createElement('div')
+      hinweis.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);background:var(--blue);color:#fff;padding:8px 16px;border-radius:20px;font-size:13px;font-weight:500;z-index:99;animation:slideDown .3s ease'
+      hinweis.textContent = '📋 Neue Aufträge verfügbar'
+      document.body.appendChild(hinweis)
+      setTimeout(() => hinweis.remove(), 3000)
+      render()
+    }
+  } catch(e) { /* Leise fehlschlagen */ }
+}
+
+// Refresh starten wenn eingeloggt, stoppen wenn ausgeloggt
+function startRefresh() {
+  letzteAnzahl = 0
+  window._statusHash = ''
+  if(refreshInterval) clearInterval(refreshInterval)
+  refreshInterval = setInterval(autoRefresh, 60000)
+  // Ersten Check nach 5 Sekunden
+  setTimeout(autoRefresh, 5000)
+}
+
+function stopRefresh() {
+  if(refreshInterval) { clearInterval(refreshInterval); refreshInterval = null }
+}
+
+// CSS für Animation
+const style = document.createElement('style')
+style.textContent = '@keyframes slideDown { from { opacity:0; top:60px } to { opacity:1; top:70px } }'
+document.head.appendChild(style)
+
 initLogin()
 </script>
 </body>
