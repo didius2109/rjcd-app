@@ -275,6 +275,12 @@
             <button class="vt-btn" onclick="setGridView('tag')">Tag</button>
             <button class="vt-btn" onclick="setGridView('monat')">Monat</button>
           </div>
+          <button id="mehrfach-del-btn" onclick="toggleMehrfachModus()" style="background:none;color:var(--text2);border:0.5px solid var(--border2);border-radius:var(--radius);padding:7px 12px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:4px">
+            <i class="ti ti-trash"></i> Mehrfach löschen
+          </button>
+          <button id="mehrfach-loeschen-btn" onclick="mehrfachLoeschen()" style="display:none;background:var(--red-bg);color:var(--red-text);border:0.5px solid var(--red);border-radius:var(--radius);padding:7px 12px;font-size:12px;font-weight:500;cursor:pointer;align-items:center;gap:4px">
+            🗑 0 löschen
+          </button>
           <button class="week-btn" onclick="openKopierenModal()" title="Aufträge aus Vorwoche kopieren" style="display:flex;align-items:center;gap:4px;font-size:12px">
             <i class="ti ti-copy"></i> Kopieren
           </button>
@@ -564,8 +570,12 @@
     <div id="am-obj-selected" style="font-size:12px;color:var(--text2);margin-bottom:4px;min-height:16px"></div>
     <label>Datum</label><input type="date" id="am-datum">
     <div class="r2">
-      <div><label>Soll-Beginn</label><input type="time" id="am-start" value="07:00"></div>
-      <div><label>Soll-Ende</label><input type="time" id="am-end" value="09:00"></div>
+      <div><label>Soll-Beginn</label>
+        <select id="am-start" onchange="updateKalk()" style="width:100%;font-size:13px;padding:7px 10px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text)"></select>
+      </div>
+      <div><label>Soll-Ende</label>
+        <select id="am-end" onchange="updateKalk()" style="width:100%;font-size:13px;padding:7px 10px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text)"></select>
+      </div>
     </div>
     <label>Aufgaben / Leistung</label>
     <div style="font-size:11px;color:var(--text2);margin-bottom:4px">
@@ -883,7 +893,10 @@ function renderGrid() {
       tagesA.forEach(a => {
         const u = auftragUmsatz(a)
         const obj = getObjData(a.objekt_id)
-        html += `<div class="chip" style="background:${f.bg};color:${f.txt}" onclick="openAuftragModal('${a.id}',null)">
+        const markiert = markierteAuftraege.has(a.id)
+        html += `<div class="chip" id="chip-${a.id}" style="background:${f.bg};color:${f.txt};${markiert?'outline:2.5px solid var(--red)':''}"
+          onclick="${mehrfachModus ? `toggleMarkierung('${a.id}',event)` : `openAuftragModal('${a.id}',null)`}">
+          ${mehrfachModus ? `<span style="font-size:10px;margin-right:3px">${markiert?'☑':'☐'}</span>` : ''}
           <div class="chip-obj">${obj.name||'?'}</div>
           <div class="chip-zeit">${a.soll_start||''}${a.soll_ende?'–'+a.soll_ende:''}</div>
           ${u>0?`<div class="chip-umsatz">${fmtEur(u)}</div>`:''}
@@ -1001,8 +1014,7 @@ function openAuftragModal(auftragId, maId, datum) {
   }
   updateKalk()
   document.getElementById('am-obj-suche').onblur = () => setTimeout(()=>{ document.getElementById('am-obj-dropdown').style.display='none' }, 150)
-  document.getElementById('am-start').oninput = updateKalk
-  document.getElementById('am-end').oninput = updateKalk
+  fuelleZeitDropdowns()
   document.getElementById('auftrag-modal').classList.add('open')
 }
 
@@ -1316,6 +1328,65 @@ async function pruefeErinnerungen() {
 
 // Alle 10 Minuten Erinnerungen prüfen
 setInterval(pruefeErinnerungen, 10 * 60 * 1000)
+
+// ── ZEIT-DROPDOWNS ────────────────────────────────────────────
+function fuelleZeitDropdowns() {
+  const zeiten = []
+  for(let h=4; h<=23; h++) for(let m=0; m<60; m+=15) zeiten.push(`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`)
+  zeiten.push('00:00')
+  const startSel=document.getElementById('am-start'), endSel=document.getElementById('am-end')
+  const curStart=startSel.value||'07:00', curEnd=endSel.value||'09:00'
+  startSel.innerHTML=zeiten.map(z=>`<option value="${z}" ${z===curStart?'selected':''}>${z} Uhr</option>`).join('')
+  endSel.innerHTML  =zeiten.map(z=>`<option value="${z}" ${z===curEnd  ?'selected':''}>${z} Uhr</option>`).join('')
+}
+
+// ── MEHRFACH-LÖSCHEN ──────────────────────────────────────────
+let mehrfachModus = false
+let markierteAuftraege = new Set()
+
+function toggleMehrfachModus() {
+  mehrfachModus = !mehrfachModus
+  markierteAuftraege.clear()
+  const btn=document.getElementById('mehrfach-del-btn')
+  const loeschBtn=document.getElementById('mehrfach-loeschen-btn')
+  if(mehrfachModus) {
+    btn.style.cssText='background:var(--amber-bg);color:var(--amber-text);border:0.5px solid var(--amber);border-radius:var(--radius);padding:7px 12px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:4px'
+    btn.innerHTML='<i class="ti ti-x"></i> Abbrechen'
+    loeschBtn.style.display='flex'
+  } else {
+    btn.style.cssText='background:none;color:var(--text2);border:0.5px solid var(--border2);border-radius:var(--radius);padding:7px 12px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:4px'
+    btn.innerHTML='<i class="ti ti-trash"></i> Mehrfach löschen'
+    loeschBtn.style.display='none'
+  }
+  if(curGridView==='woche') renderGrid()
+}
+
+function toggleMarkierung(auftragId, event) {
+  event.stopPropagation()
+  if(markierteAuftraege.has(auftragId)) markierteAuftraege.delete(auftragId)
+  else markierteAuftraege.add(auftragId)
+  document.getElementById('mehrfach-loeschen-btn').textContent=`🗑 ${markierteAuftraege.size} löschen`
+  const chip=document.getElementById('chip-'+auftragId)
+  if(chip) chip.style.outline=markierteAuftraege.has(auftragId)?'2.5px solid var(--red)':'none'
+}
+
+async function mehrfachLoeschen() {
+  if(!markierteAuftraege.size) return
+  if(!confirm(`${markierteAuftraege.size} Aufträge wirklich löschen?`)) return
+  try {
+    for(const id of markierteAuftraege) {
+      await sbDeleteWhere('zeiterfassung',`auftrag_id=eq.${id}`)
+      await sbDeleteWhere('aufgaben',`auftrag_id=eq.${id}`)
+      await sbDeleteWhere('push_erinnerungen',`auftrag_id=eq.${id}`)
+      await sbDelete('auftraege',id)
+    }
+    mehrfachModus=false; markierteAuftraege.clear()
+    document.getElementById('mehrfach-del-btn').innerHTML='<i class="ti ti-trash"></i> Mehrfach löschen'
+    document.getElementById('mehrfach-del-btn').style.cssText='background:none;color:var(--text2);border:0.5px solid var(--border2);border-radius:var(--radius);padding:7px 12px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:4px'
+    document.getElementById('mehrfach-loeschen-btn').style.display='none'
+    await loadWoche()
+  } catch(e) { alert('Fehler: '+e.message) }
+}
 
 // ── OBJEKT SUCHE ─────────────────────────────────────────────
 function filterObjekte(suche) {
