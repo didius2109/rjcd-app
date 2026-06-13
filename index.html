@@ -173,7 +173,22 @@
     .cbadge.red { background: var(--red-bg); color: var(--red-text); }
     .cbadge.blu { background: var(--blue-bg); color: var(--blue-text); }
     .cbadge.gry { background: var(--bg3); color: var(--text2); border: 0.5px solid var(--border2); }
-    /* MONATSKALENDER */
+    /* PIN LOGIN */
+    .pin-overlay{position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;align-items:center;justify-content:center}
+    .pin-box{background:var(--bg2);border:0.5px solid var(--border2);border-radius:var(--radius-lg);padding:28px 24px;width:320px;text-align:center}
+    .pin-logo{font-size:28px;font-weight:500;margin-bottom:4px}
+    .pin-sub{font-size:12px;color:var(--text2);margin-bottom:20px}
+    .pin-ma-sel{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+    .pin-ma-btn{padding:10px 8px;border-radius:var(--radius);border:0.5px solid var(--border2);background:none;cursor:pointer;font-size:13px;font-weight:500;color:var(--text2);transition:all .15s}
+    .pin-ma-btn.selected{border-color:var(--text);background:var(--bg3);color:var(--text)}
+    .pin-dots{display:flex;gap:10px;justify-content:center;margin-bottom:16px}
+    .pin-dot{width:12px;height:12px;border-radius:50%;background:var(--border2);transition:background .15s}
+    .pin-dot.filled{background:var(--text)}
+    .pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+    .pin-key{padding:14px;border-radius:var(--radius);border:0.5px solid var(--border2);background:var(--bg);cursor:pointer;font-size:16px;font-weight:500;color:var(--text);transition:all .12s}
+    .pin-key:hover{background:var(--bg3)}
+    .pin-key:active{transform:scale(0.95)}
+    .pin-err{color:var(--red);font-size:12px;min-height:18px;margin-top:4px}
     .monat-grid { display: grid; grid-template-columns: repeat(7, 1fr); border: 0.5px solid var(--border2); border-radius: var(--radius-lg); overflow: hidden; background: var(--bg2); }
     .monat-hdr { background: var(--bg3); padding: 6px 4px; font-size: 11px; font-weight: 500; color: var(--text2); text-align: center; border-right: 0.5px solid var(--border); border-bottom: 0.5px solid var(--border); }
     .monat-tag { border-right: 0.5px solid var(--border); border-bottom: 0.5px solid var(--border); min-height: 90px; padding: 4px; vertical-align: top; background: var(--bg2); }
@@ -227,7 +242,36 @@
   </script>
 </head>
 <body>
-<div class="app">
+<div class="pin-overlay" id="pin-overlay">
+  <div class="pin-box">
+    <div class="pin-logo app-logo app-firmenname">RJCD</div>
+    <div class="pin-sub">Bitte anmelden</div>
+    <div class="pin-ma-sel" id="pin-ma-sel"></div>
+    <div class="pin-dots" id="pin-dots">
+      <div class="pin-dot" id="pd0"></div>
+      <div class="pin-dot" id="pd1"></div>
+      <div class="pin-dot" id="pd2"></div>
+      <div class="pin-dot" id="pd3"></div>
+    </div>
+    <div class="pin-pad">
+      <button class="pin-key" onclick="pinTaste('1')">1</button>
+      <button class="pin-key" onclick="pinTaste('2')">2</button>
+      <button class="pin-key" onclick="pinTaste('3')">3</button>
+      <button class="pin-key" onclick="pinTaste('4')">4</button>
+      <button class="pin-key" onclick="pinTaste('5')">5</button>
+      <button class="pin-key" onclick="pinTaste('6')">6</button>
+      <button class="pin-key" onclick="pinTaste('7')">7</button>
+      <button class="pin-key" onclick="pinTaste('8')">8</button>
+      <button class="pin-key" onclick="pinTaste('9')">9</button>
+      <button class="pin-key" onclick="pinTaste('del')" style="font-size:13px">⌫</button>
+      <button class="pin-key" onclick="pinTaste('0')">0</button>
+      <button class="pin-key" onclick="pinTaste('ok')" style="background:var(--text);color:var(--bg2);border-color:var(--text)">OK</button>
+    </div>
+    <div class="pin-err" id="pin-err"></div>
+  </div>
+</div>
+
+<div class="app" id="app-main" style="display:none">
   <header class="header">
     <div class="header-left">
       <div class="logo app-logo app-firmenname">RJCD <span>Gebäudereinigung</span></div>
@@ -244,7 +288,7 @@
     <div style="display:flex;align-items:center;gap:8px">
       <div class="status-dot" id="status-dot"></div>
       <span class="status-label" id="status-label">Verbinde...</span>
-      <button id="push-btn" onclick="aktivierePush()" style="display:none;background:var(--amber-bg,#FAEEDA);color:var(--amber,#BA7517);border:0.5px solid var(--amber,#BA7517);border-radius:var(--radius);padding:4px 10px;font-size:11px;font-weight:500;cursor:pointer">
+      <button id="push-btn" onclick="aktiviereChefPush()" style="display:none;background:var(--amber-bg,#FAEEDA);color:var(--amber,#BA7517);border:0.5px solid var(--amber,#BA7517);border-radius:var(--radius);padding:4px 10px;font-size:11px;font-weight:500;cursor:pointer">
         🔔 Push aktivieren
       </button>
     </div>
@@ -549,9 +593,7 @@
       </div>
     </div>
   </main>
-</div>
-
-<!-- AUFTRAG MODAL -->
+</div><!-- end app-main -->
 <div class="modal-bg" id="auftrag-modal">
   <div class="modal">
     <h3 id="auftrag-modal-title">Neuer Auftrag</h3>
@@ -721,6 +763,204 @@ let mitarbeiter = [], objekte = [], auftraege = []
 let curWeek = 0, curGridView = 'woche', curView = 'dispoplan'
 let editAuftragId = null, editMaId = null, editObjId = null
 
+// ── PIN LOGIN CHEF ────────────────────────────────────────────
+let chefAccounts = []
+let curChef = null
+let pinEingabe = ''
+let pinSelectedMa = null
+let inaktivTimer = null
+const PIN_TIMEOUT = 30 * 60 * 1000  // 30 Minuten
+
+async function initPinLogin() {
+  try {
+    chefAccounts = await sbGet('chef_accounts', 'aktiv=eq.true&order=name&select=id,name,pin,rolle,onesignal_id')
+    renderPinMaAuswahl()
+  } catch(e) {
+    // Tabelle noch nicht angelegt — direkt einloggen
+    console.log('Chef-Accounts nicht gefunden, direkter Zugang')
+    pinErfolgreich({name:'Chef', id:'chef', rolle:'admin'})
+  }
+}
+
+function renderPinMaAuswahl() {
+  const el = document.getElementById('pin-ma-sel')
+  if(!chefAccounts.length) { pinErfolgreich({name:'Chef', id:'chef', rolle:'admin'}); return }
+  el.innerHTML = chefAccounts.map(a => `
+    <button class="pin-ma-btn ${pinSelectedMa?.id===a.id?'selected':''}"
+      onclick="waehleChef('${a.id}')">
+      ${a.name}
+    </button>`).join('')
+  if(chefAccounts.length === 1) waehleChef(chefAccounts[0].id)
+}
+
+function waehleChef(id) {
+  pinSelectedMa = chefAccounts.find(a => a.id === id)
+  pinEingabe = ''
+  aktualisierePinDots()
+  document.getElementById('pin-err').textContent = ''
+  renderPinMaAuswahl()
+}
+
+function pinTaste(t) {
+  if(!pinSelectedMa) { document.getElementById('pin-err').textContent = 'Bitte zuerst Person auswählen'; return }
+  if(t === 'del') {
+    pinEingabe = pinEingabe.slice(0,-1)
+  } else if(t === 'ok') {
+    pinPruefen()
+    return
+  } else {
+    if(pinEingabe.length >= 4) return
+    pinEingabe += t
+    if(pinEingabe.length === 4) pinPruefen()
+  }
+  aktualisierePinDots()
+}
+
+function aktualisierePinDots() {
+  for(let i=0; i<4; i++) {
+    const dot = document.getElementById('pd'+i)
+    if(dot) dot.className = 'pin-dot' + (i < pinEingabe.length ? ' filled' : '')
+  }
+}
+
+function pinPruefen() {
+  if(pinEingabe === pinSelectedMa.pin) {
+    pinErfolgreich(pinSelectedMa)
+  } else {
+    document.getElementById('pin-err').textContent = 'Falscher PIN — bitte nochmal'
+    pinEingabe = ''
+    aktualisierePinDots()
+    // Kurzes Schütteln
+    const box = document.querySelector('.pin-box')
+    box.style.animation = 'shake .3s ease'
+    setTimeout(() => box.style.animation = '', 300)
+  }
+}
+
+function pinErfolgreich(chef) {
+  curChef = chef
+  sessionStorage.setItem('chefLogin', JSON.stringify({id:chef.id, name:chef.name, ts:Date.now()}))
+  document.getElementById('pin-overlay').style.display = 'none'
+  document.getElementById('app-main').style.display = 'grid'
+  // Inaktiv-Timer starten
+  startInaktivTimer()
+  // Push für Chef registrieren
+  registriereChefPush(chef.id)
+  // Willkommensanzeige
+  document.getElementById('status-label').textContent = `Angemeldet: ${chef.name}`
+}
+
+function startInaktivTimer() {
+  clearTimeout(inaktivTimer)
+  inaktivTimer = setTimeout(pinSperren, PIN_TIMEOUT)
+  // Bei jeder Interaktion Timer zurücksetzen
+  document.addEventListener('click', resetInaktivTimer, true)
+  document.addEventListener('keydown', resetInaktivTimer, true)
+}
+
+function resetInaktivTimer() {
+  clearTimeout(inaktivTimer)
+  inaktivTimer = setTimeout(pinSperren, PIN_TIMEOUT)
+}
+
+function pinSperren() {
+  document.getElementById('app-main').style.display = 'none'
+  document.getElementById('pin-overlay').style.display = 'flex'
+  pinEingabe = ''
+  aktualisierePinDots()
+  renderPinMaAuswahl()
+  document.removeEventListener('click', resetInaktivTimer, true)
+  document.removeEventListener('keydown', resetInaktivTimer, true)
+}
+
+async function registriereChefPush(chefId) {
+  try {
+    if(!window.OneSignal) return
+    const permission = OneSignal.Notifications.permission
+    if(!permission) {
+      document.getElementById('push-btn').style.display = 'block'
+      return
+    }
+    await OneSignal.login('chef-'+chefId)
+    const playerId = await OneSignal.User.PushSubscription.id
+    if(playerId) await sbPatch('chef_accounts', chefId, {onesignal_id: playerId})
+    document.getElementById('push-btn').style.display = 'none'
+  } catch(e) { console.log('Chef-Push:', e) }
+}
+
+// Push-Button für Chef
+async function aktiviereChefPush() {
+  if(!window.OneSignal) return
+  try {
+    await OneSignal.Notifications.requestPermission()
+    if(OneSignal.Notifications.permission && curChef) {
+      await OneSignal.login('chef-'+curChef.id)
+      const playerId = await OneSignal.User.PushSubscription.id
+      if(playerId) await sbPatch('chef_accounts', curChef.id, {onesignal_id: playerId})
+      document.getElementById('push-btn').style.display = 'none'
+      alert('✓ Push-Benachrichtigungen aktiviert!')
+    }
+  } catch(e) { alert('Push: '+e.message) }
+}
+
+// Session prüfen beim Start
+function pruefePinSession() {
+  try {
+    const s = sessionStorage.getItem('chefLogin')
+    if(s) {
+      const data = JSON.parse(s)
+      if(Date.now() - data.ts < PIN_TIMEOUT) {
+        const chef = chefAccounts.find(a=>a.id===data.id) || {id:data.id, name:data.name, rolle:'chef'}
+        pinErfolgreich(chef)
+        return true
+      }
+    }
+  } catch(e) {}
+  return false
+}
+
+// CSS für Shake-Animation
+const pinStyle = document.createElement('style')
+pinStyle.textContent = '@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}'
+document.head.appendChild(pinStyle)
+
+// ── PUSH AN CHEF ──────────────────────────────────────────────
+async function sendPushAnAlleChefs(titel, text) {
+  try {
+    // Alle Chef-IDs sammeln
+    const chefIds = chefAccounts
+      .filter(a => a.onesignal_id)
+      .map(a => 'chef-'+a.id)
+    if(!chefIds.length) chefIds.push('chef')
+
+    await fetch('https://grxpfsrctfhtamwrqooz.supabase.co/functions/v1/send-push', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdyeHBmc3JjdGZodGFtd3Jxb296Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5MjExMTUsImV4cCI6MjA5NTQ5NzExNX0.gNADsG6yxVv8T3_Vni7DrOrLoMBQbu57zhy5f8pALbI`,
+      },
+      body: JSON.stringify({ chefIds, titel, text, url: '/index.html' })
+    })
+  } catch(e) { console.log('Chef-Push-Alle:', e) }
+}
+
+// ── PUSH AUSLÖSER ─────────────────────────────────────────────
+// Wird aus der MA-App aufgerufen wenn Abwesenheit gesendet wird
+// Hier in der Chef-App: Push bei extremer Zeitabweichung im Cockpit
+function pruefeZeitabweichungPush(cockpitDaten) {
+  cockpitDaten.forEach(a => {
+    const abw = a.zeit?.abweichung_minuten
+    if(abw && Math.abs(abw) > 30) {  // Grenze: 30 Minuten
+      const ma = a.ma?.nachname || '?'
+      const obj = a.objekt?.name || '?'
+      sendPushAnAlleChefs(
+        `⚠️ Zeitabweichung: ${ma}`,
+        `${obj}: ${abw>0?'+':''}${abw} Minuten`
+      )
+    }
+  })
+}
+
 // ── INIT ──────────────────────────────────────────────────────
 async function init() {
   try {
@@ -728,20 +968,23 @@ async function init() {
     mitarbeiter = await sbGet('mitarbeiter', 'aktiv=eq.true&order=nachname')
     objekte     = await sbGet('objekte',     'aktiv=eq.true&order=name')
     setStatus('Verbunden', true)
-    // Design laden und anwenden
     const d = await ladeDesign()
     wendeDesignAn(d)
-    // Abwesenheiten laden für Dispoplan
-    try {
-      abwesenheitenChef = await sbGet('abwesenheiten', 'status=eq.genehmigt&select=*')
-    } catch(e) { abwesenheitenChef = [] }
+    try { abwesenheitenChef = await sbGet('abwesenheiten', 'status=eq.genehmigt&select=*') } catch(e) { abwesenheitenChef = [] }
     await loadWoche()
     renderMaGrid()
     renderObjGrid()
+    // PIN-Login
+    await initPinLogin()
+    if(!pruefePinSession()) {
+      // Zeige PIN-Overlay
+    }
   } catch(e) {
     setStatus('Fehler', false)
     document.getElementById('grid-container').innerHTML =
-      `<div class="error-box"><i class="ti ti-alert-circle"></i> ${e.message}<br><small>Bitte SQL-Script in Supabase ausführen (rjcd_supabase_setup.sql)</small></div>`
+      `<div class="error-box"><i class="ti ti-alert-circle"></i> ${e.message}</div>`
+    // Trotzdem PIN zeigen
+    initPinLogin()
   }
 }
 
@@ -1747,6 +1990,8 @@ async function ladeKockpit() {
     }))
 
     renderCockpit()
+    // Push bei extremen Abweichungen
+    pruefeZeitabweichungPush(cockpitDaten)
   } catch(e) {
     document.getElementById('cockpit-liste').innerHTML =
       `<div style="color:var(--red-text);font-size:13px;padding:16px">Fehler: ${e.message}</div>`
