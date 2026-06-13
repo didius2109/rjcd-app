@@ -165,7 +165,32 @@
     .leer i{font-size:44px;opacity:.3;display:block;margin-bottom:14px}
     .leer p{font-size:14px}
 
-    /* EDIT MODAL */
+    /* ABWESENHEIT */
+    .abw-card{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:10px}
+    .abw-card-head{padding:12px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer}
+    .abw-typ{font-size:13px;font-weight:500}
+    .abw-datum{font-size:11px;color:var(--text2);margin-top:2px}
+    .abw-status{font-size:10px;font-weight:500;padding:3px 9px;border-radius:10px}
+    .abw-status.ausstehend{background:var(--amber-bg);color:var(--amber-text)}
+    .abw-status.genehmigt{background:var(--green-bg);color:var(--green-text)}
+    .abw-status.abgelehnt{background:var(--red-bg);color:var(--red-text)}
+    /* CHAT */
+    .chat-body{padding:10px 14px;border-top:0.5px solid var(--border);max-height:260px;overflow-y:auto;display:flex;flex-direction:column;gap:6px}
+    .chat-msg{max-width:80%;padding:8px 12px;border-radius:12px;font-size:13px;line-height:1.4}
+    .chat-msg.ma{background:var(--blue-bg);color:var(--blue-text);align-self:flex-end;border-bottom-right-radius:4px}
+    .chat-msg.chef{background:var(--bg3);color:var(--text);align-self:flex-start;border-bottom-left-radius:4px}
+    .chat-msg .chat-zeit{font-size:9px;opacity:.6;margin-top:3px}
+    .chat-msg img{max-width:180px;max-height:180px;border-radius:8px;display:block;margin-top:6px;cursor:pointer}
+    .chat-input-bar{padding:8px 12px;border-top:0.5px solid var(--border);display:flex;gap:6px;align-items:flex-end}
+    .chat-input{flex:1;font-size:13px;padding:8px 10px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);resize:none;min-height:38px;max-height:100px;font-family:var(--font)}
+    .chat-send{background:var(--blue);color:#fff;border:none;border-radius:var(--radius);padding:8px 12px;cursor:pointer;font-size:13px;flex-shrink:0}
+    .chat-foto-btn{background:none;border:0.5px solid var(--border2);border-radius:var(--radius);padding:8px;cursor:pointer;color:var(--text2);flex-shrink:0}
+    /* NEU ANTRAG */
+    .neu-btn-bar{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+    .typ-btn{padding:14px 10px;border-radius:var(--radius-lg);border:0.5px solid var(--border2);background:var(--bg2);cursor:pointer;text-align:center;transition:all .15s}
+    .typ-btn:active{background:var(--bg3)}
+    .typ-btn i{font-size:28px;color:var(--text2);display:block;margin-bottom:6px}
+    .typ-btn span{font-size:13px;font-weight:500;color:var(--text2)}
     .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);align-items:flex-end;justify-content:center;z-index:50}
     .modal-bg.open{display:flex}
     .modal{background:var(--bg2);border-radius:var(--radius-lg) var(--radius-lg) 0 0;padding:20px;width:100%;max-height:80vh;overflow-y:auto}
@@ -258,10 +283,55 @@
       <i class="ti ti-calendar-week" aria-hidden="true"></i>
       <span id="nav-woche-lbl">Woche</span>
     </button>
+    <button class="bnav-btn" id="nav-abw" onclick="setTab('abwesenheit')">
+      <i class="ti ti-beach" aria-hidden="true"></i>
+      <span id="nav-abw-badge" style="display:none;position:absolute;top:6px;right:calc(50% - 18px);background:var(--red);color:#fff;font-size:9px;font-weight:600;padding:1px 5px;border-radius:8px"></span>
+      <span>Urlaub</span>
+    </button>
   </nav>
 </div>
 
-<!-- EDIT MODAL -->
+<!-- ABWESENHEIT MODAL -->
+<div class="modal-bg" id="abw-modal">
+  <div class="modal">
+    <h3 id="abw-modal-titel">Neuer Antrag</h3>
+    <div id="abw-typ-auswahl">
+      <div class="neu-btn-bar">
+        <div class="typ-btn" onclick="setAbwTyp('urlaub')">
+          <i class="ti ti-beach" aria-hidden="true"></i>
+          <span>Urlaub</span>
+        </div>
+        <div class="typ-btn" onclick="setAbwTyp('krank')">
+          <i class="ti ti-thermometer" aria-hidden="true"></i>
+          <span>Krankmeldung</span>
+        </div>
+      </div>
+    </div>
+    <div id="abw-formular" style="display:none">
+      <div id="abw-typ-label" style="font-size:13px;font-weight:500;margin-bottom:12px;display:flex;align-items:center;gap:6px"></div>
+      <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Von</label>
+      <input type="date" id="abw-von" style="width:100%;font-size:13px;padding:8px 10px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);margin-bottom:8px">
+      <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Bis</label>
+      <input type="date" id="abw-bis" style="width:100%;font-size:13px;padding:8px 10px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);margin-bottom:8px">
+      <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Nachricht an Chef</label>
+      <textarea id="abw-notiz" placeholder="z.B. Ich bin krank und melde mich wieder wenn es besser ist..." style="width:100%;font-size:13px;padding:8px 10px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);min-height:68px;resize:none;font-family:var(--font);margin-bottom:8px"></textarea>
+      <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Foto anhängen (z.B. Krankschreibung)</label>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
+        <input type="file" id="abw-foto-inp" accept="image/*" style="display:none" onchange="abwFotoGewaehlt(this)">
+        <button onclick="document.getElementById('abw-foto-inp').click()" style="background:none;border:0.5px solid var(--border2);border-radius:var(--radius);padding:8px 14px;font-size:13px;cursor:pointer;color:var(--text2);display:flex;align-items:center;gap:6px">
+          <i class="ti ti-camera" aria-hidden="true"></i> Foto wählen
+        </button>
+        <span id="abw-foto-name" style="font-size:11px;color:var(--text2)">Kein Foto</span>
+      </div>
+      <div class="modal-btns">
+        <button class="mbtn-cancel" onclick="closeAbwModal()">Abbrechen</button>
+        <button class="mbtn-save" onclick="sendeAbwesenheit()">Senden</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 <div class="modal-bg" id="edit-modal">
   <div class="modal">
     <h3 id="edit-titel">Auftrag bearbeiten</h3>
@@ -394,6 +464,7 @@ async function login(){
   registrierePush(curMa.id)
   startRefresh()
   await ladeAuftraege()
+  await ladeAbwesenheiten()
 }
 
 function showErr(msg){const el=document.getElementById('l-err');el.textContent=msg;el.style.display='block'}
@@ -492,7 +563,241 @@ function setTab(tab){
   curTab=tab
   document.getElementById('nav-heute').className='bnav-btn'+(tab==='heute'?' on':'')
   document.getElementById('nav-woche').className='bnav-btn'+(tab==='woche'?' on':'')
+  document.getElementById('nav-abw').className='bnav-btn'+(tab==='abwesenheit'?' on':'')
   render()
+}
+
+// ── ABWESENHEIT ───────────────────────────────────────────────
+let abwesenheiten = []
+let curAbwTyp = 'urlaub'
+let abwFotoFile = null
+let curChatAbwId = null
+
+async function ladeAbwesenheiten() {
+  try {
+    abwesenheiten = await sbGet('abwesenheiten',
+      `mitarbeiter_id=eq.${curMa.id}&order=erstellt_am.desc&select=*`)
+  } catch(e) { abwesenheiten = [] }
+}
+
+function renderAbwesenheit() {
+  const el = document.getElementById('main')
+  const typIcons = {urlaub:'ti-beach', krank:'ti-thermometer', sonstiges:'ti-calendar-x'}
+  const typLabels = {urlaub:'Urlaub', krank:'Krankmeldung', sonstiges:'Sonstiges'}
+
+  let html = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div style="font-size:17px;font-weight:500">Urlaub &amp; Abwesenheit</div>
+      <button onclick="openAbwModal()" style="background:var(--text);color:var(--bg2);border:none;border-radius:var(--radius);padding:8px 14px;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px">
+        <i class="ti ti-plus" aria-hidden="true"></i> Neu
+      </button>
+    </div>`
+
+  if(!abwesenheiten.length) {
+    html += `<div class="leer"><i class="ti ti-beach" aria-hidden="true"></i><p>Noch keine Anträge</p></div>`
+    el.innerHTML = html
+    return
+  }
+
+  abwesenheiten.forEach(a => {
+    const tage = Math.round((new Date(a.bis_datum) - new Date(a.von_datum)) / 86400000) + 1
+    html += `<div class="abw-card">
+      <div class="abw-card-head" onclick="toggleChat('${a.id}')">
+        <div>
+          <div class="abw-typ">
+            <i class="ti ${typIcons[a.typ]||'ti-calendar'}" style="font-size:14px;vertical-align:-2px;margin-right:4px" aria-hidden="true"></i>
+            ${typLabels[a.typ]||a.typ}
+          </div>
+          <div class="abw-datum">${formatDatum(a.von_datum)} – ${formatDatum(a.bis_datum)} · ${tage} Tag${tage!==1?'e':''}</div>
+        </div>
+        <span class="abw-status ${a.status}">${a.status==='ausstehend'?'Ausstehend':a.status==='genehmigt'?'✓ Genehmigt':'✗ Abgelehnt'}</span>
+      </div>
+      <div id="chat-${a.id}" style="display:none">
+        <div class="chat-body" id="chat-body-${a.id}">
+          <div style="text-align:center;font-size:11px;color:var(--text3);padding:8px">Tippen um Nachricht zu schreiben</div>
+        </div>
+        <div class="chat-input-bar">
+          <textarea class="chat-input" id="chat-inp-${a.id}" placeholder="Nachricht..." rows="1"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMsg('${a.id}')}"></textarea>
+          <button class="chat-foto-btn" onclick="document.getElementById('chat-foto-${a.id}').click()">
+            <i class="ti ti-camera" aria-hidden="true"></i>
+            <input type="file" id="chat-foto-${a.id}" accept="image/*" style="display:none" onchange="sendChatFoto('${a.id}',this)">
+          </button>
+          <button class="chat-send" onclick="sendChatMsg('${a.id}')">
+            <i class="ti ti-send" aria-hidden="true"></i>
+          </button>
+        </div>
+      </div>
+    </div>`
+  })
+
+  el.innerHTML = html
+}
+
+async function toggleChat(abwId) {
+  const el = document.getElementById('chat-'+abwId)
+  const isOpen = el.style.display !== 'none'
+  if(isOpen) { el.style.display = 'none'; return }
+  el.style.display = 'block'
+  curChatAbwId = abwId
+  await ladeChat(abwId)
+}
+
+async function ladeChat(abwId) {
+  try {
+    const msgs = await sbGet('nachrichten',
+      `abwesenheit_id=eq.${abwId}&order=erstellt_am&select=*`)
+    const body = document.getElementById('chat-body-'+abwId)
+    if(!body) return
+    if(!msgs.length) {
+      body.innerHTML = '<div style="text-align:center;font-size:11px;color:var(--text3);padding:8px">Noch keine Nachrichten</div>'
+      return
+    }
+    body.innerHTML = msgs.map(m => `
+      <div class="chat-msg ${m.von}">
+        ${m.text ? `<div>${m.text}</div>` : ''}
+        ${m.foto_url ? `<img src="${m.foto_url}" onclick="window.open('${m.foto_url}','_blank')" alt="Foto">` : ''}
+        <div class="chat-zeit">${new Date(m.erstellt_am).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})} · ${m.von==='ma'?curMa.name:'Chef'}</div>
+      </div>`).join('')
+    body.scrollTop = body.scrollHeight
+  } catch(e) { console.log('Chat laden:', e) }
+}
+
+async function sendChatMsg(abwId) {
+  const inp = document.getElementById('chat-inp-'+abwId)
+  const text = inp?.value.trim()
+  if(!text) return
+  inp.value = ''
+  try {
+    await sbPost('nachrichten', {
+      abwesenheit_id: abwId,
+      mitarbeiter_id: curMa.id,
+      von: 'ma',
+      text,
+      gelesen: false
+    })
+    await ladeChat(abwId)
+    // Push an Chef
+    await sendePushAnChef('💬 Neue Nachricht', `${curMa.name}: ${text.substring(0,60)}`)
+  } catch(e) { alert(t('fehler')+': '+e.message) }
+}
+
+async function sendChatFoto(abwId, input) {
+  const file = input.files[0]
+  if(!file) return
+  try {
+    // Foto in Supabase Storage hochladen
+    const pfad = `chat/${curMa.id}/${Date.now()}_${file.name}`
+    const { data, error } = await uploadFoto('abwesenheit-fotos', pfad, file)
+    if(error) throw new Error(error.message)
+    const fotoUrl = `${SB_URL}/storage/v1/object/public/abwesenheit-fotos/${pfad}`
+    await sbPost('nachrichten', {
+      abwesenheit_id: abwId,
+      mitarbeiter_id: curMa.id,
+      von: 'ma',
+      foto_url: fotoUrl,
+      gelesen: false
+    })
+    await ladeChat(abwId)
+    await sendePushAnChef('📷 Neues Foto', `${curMa.name} hat ein Foto gesendet`)
+  } catch(e) { alert('Foto: '+e.message) }
+}
+
+async function uploadFoto(bucket, pfad, file) {
+  const r = await fetch(`${SB_URL}/storage/v1/object/${bucket}/${pfad}`, {
+    method: 'POST',
+    headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer '+SB_KEY, 'Content-Type': file.type },
+    body: file
+  })
+  if(!r.ok) return { error: { message: await r.text() } }
+  return { data: await r.json() }
+}
+
+function formatDatum(d) {
+  if(!d) return '—'
+  return new Date(d+'T12:00:00').toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'})
+}
+
+// Neuer Antrag Modal
+function openAbwModal() {
+  curAbwTyp = 'urlaub'
+  abwFotoFile = null
+  document.getElementById('abw-typ-auswahl').style.display = 'block'
+  document.getElementById('abw-formular').style.display = 'none'
+  document.getElementById('abw-von').value = ''
+  document.getElementById('abw-bis').value = ''
+  document.getElementById('abw-notiz').value = ''
+  document.getElementById('abw-foto-name').textContent = 'Kein Foto'
+  document.getElementById('abw-modal').classList.add('open')
+}
+
+function closeAbwModal() {
+  document.getElementById('abw-modal').classList.remove('open')
+}
+
+function setAbwTyp(typ) {
+  curAbwTyp = typ
+  document.getElementById('abw-typ-auswahl').style.display = 'none'
+  document.getElementById('abw-formular').style.display = 'block'
+  const icons = {urlaub:'🏖️', krank:'🤒'}
+  const labels = {urlaub:'Urlaubsantrag', krank:'Krankmeldung'}
+  document.getElementById('abw-typ-label').innerHTML =
+    `<span style="font-size:20px">${icons[typ]||'📅'}</span> ${labels[typ]||typ}`
+  // Bei Krank: heute als Standard
+  if(typ === 'krank') {
+    const h = new Date(); const iso = h.getFullYear()+'-'+String(h.getMonth()+1).padStart(2,'0')+'-'+String(h.getDate()).padStart(2,'0')
+    document.getElementById('abw-von').value = iso
+    document.getElementById('abw-bis').value = iso
+  }
+}
+
+function abwFotoGewaehlt(input) {
+  abwFotoFile = input.files[0]
+  document.getElementById('abw-foto-name').textContent = abwFotoFile ? abwFotoFile.name : 'Kein Foto'
+}
+
+async function sendeAbwesenheit() {
+  const von = document.getElementById('abw-von').value
+  const bis = document.getElementById('abw-bis').value
+  const notiz = document.getElementById('abw-notiz').value.trim()
+  if(!von || !bis) { alert('Bitte Von- und Bis-Datum eingeben'); return }
+  if(new Date(bis) < new Date(von)) { alert('Bis-Datum muss nach Von-Datum sein'); return }
+  try {
+    let fotoUrl = null
+    if(abwFotoFile) {
+      const pfad = `antraege/${curMa.id}/${Date.now()}_${abwFotoFile.name}`
+      const { data, error } = await uploadFoto('abwesenheit-fotos', pfad, abwFotoFile)
+      if(!error) fotoUrl = `${SB_URL}/storage/v1/object/public/abwesenheit-fotos/${pfad}`
+    }
+    const res = await sbPost('abwesenheiten', {
+      mitarbeiter_id: curMa.id,
+      typ: curAbwTyp,
+      von_datum: von,
+      bis_datum: bis,
+      status: 'ausstehend',
+      notiz_ma: notiz || null,
+    })
+    // Erste Nachricht mit Notiz und Foto
+    if(notiz || fotoUrl) {
+      await sbPost('nachrichten', {
+        abwesenheit_id: res[0].id,
+        mitarbeiter_id: curMa.id,
+        von: 'ma',
+        text: notiz || null,
+        foto_url: fotoUrl,
+        gelesen: false
+      })
+    }
+    closeAbwModal()
+    // Push an Chef
+    const typLabel = curAbwTyp === 'urlaub' ? 'Urlaubsantrag' : 'Krankmeldung'
+    await sendePushAnChef(
+      `${curAbwTyp==='urlaub'?'🏖️':'🤒'} ${typLabel}`,
+      `${curMa.name}: ${formatDatum(von)} – ${formatDatum(bis)}`
+    )
+    await ladeAbwesenheiten()
+    render()
+  } catch(e) { alert(t('fehler')+': '+e.message) }
 }
 
 // ── DATEN LADEN ───────────────────────────────────────────────
@@ -549,7 +854,8 @@ function getMapsUrlMA(obj) {
 // ── RENDER HAUPT ──────────────────────────────────────────────
 function render(){
   if(curTab==='heute') renderHeute()
-  else renderWoche()
+  else if(curTab==='woche') renderWoche()
+  else if(curTab==='abwesenheit') renderAbwesenheit()
 }
 
 // ── HEUTE ─────────────────────────────────────────────────────

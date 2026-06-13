@@ -222,6 +222,7 @@
       <nav class="nav-tabs">
         <button class="nav-tab active" onclick="setView('dispoplan')"><i class="ti ti-calendar-week"></i> Dispoplan</button>
         <button class="nav-tab" onclick="setView('cockpit')"><i class="ti ti-activity"></i> Cockpit</button>
+        <button class="nav-tab" onclick="setView('abwesenheit')" id="nav-abw-chef"><i class="ti ti-beach"></i> Abwesenheit</button>
         <button class="nav-tab" onclick="setView('export')"><i class="ti ti-file-export"></i> Export</button>
         <button class="nav-tab" onclick="setView('mitarbeiter')"><i class="ti ti-users"></i> Mitarbeiter</button>
         <button class="nav-tab" onclick="setView('objekte')"><i class="ti ti-building"></i> Objekte</button>
@@ -297,6 +298,26 @@
       <div id="grid-container">
         <div class="loading"><div class="spinner"></div> Daten werden geladen...</div>
       </div>
+    </div>
+
+    <!-- ABWESENHEIT VIEW -->
+    <div id="view-abwesenheit" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+        <div>
+          <div style="font-size:16px;font-weight:500">Abwesenheiten</div>
+          <div style="font-size:12px;color:var(--text2)" id="abw-chef-info">Urlaubsanträge &amp; Krankmeldungen</div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <select id="abw-chef-filter" onchange="renderAbwesenheitChef()" style="font-size:13px;padding:6px 10px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text)">
+            <option value="alle">Alle</option>
+            <option value="ausstehend">Ausstehend</option>
+            <option value="genehmigt">Genehmigt</option>
+            <option value="abgelehnt">Abgelehnt</option>
+          </select>
+          <button class="btn-primary" onclick="ladeAbwesenheitChef()"><i class="ti ti-refresh"></i> Aktualisieren</button>
+        </div>
+      </div>
+      <div id="abw-chef-liste"></div>
     </div>
 
     <!-- COCKPIT VIEW -->
@@ -2151,9 +2172,159 @@ function exportCSV() {
   a.download=`RJCD_${exportTyp}_${document.getElementById('ex-von').value}_${document.getElementById('ex-bis').value}.csv`; a.click()
 }
 
+// ── ABWESENHEIT CHEF ─────────────────────────────────────────
+let abwesenheitenChef = []
+let chefChatOffen = null
+
+async function ladeAbwesenheitChef() {
+  document.getElementById('abw-chef-liste').innerHTML =
+    '<div class="loading"><div class="spinner"></div> Lade Abwesenheiten...</div>'
+  try {
+    abwesenheitenChef = await sbGet('abwesenheiten',
+      'order=erstellt_am.desc&select=*')
+    renderAbwesenheitChef()
+  } catch(e) {
+    document.getElementById('abw-chef-liste').innerHTML =
+      `<div style="color:var(--red-text);padding:16px;font-size:13px">Fehler: ${e.message}</div>`
+  }
+}
+
+function renderAbwesenheitChef() {
+  const filter = document.getElementById('abw-chef-filter').value
+  const liste = abwesenheitenChef.filter(a => filter==='alle' || a.status===filter)
+  const ausstehend = abwesenheitenChef.filter(a=>a.status==='ausstehend').length
+
+  // Badge im Tab
+  const navBtn = document.getElementById('nav-abw-chef')
+  if(navBtn) navBtn.innerHTML = `<i class="ti ti-beach"></i> Abwesenheit${ausstehend?` <span style="background:var(--red);color:#fff;font-size:9px;padding:1px 6px;border-radius:8px;font-weight:600">${ausstehend}</span>`:''}`
+
+  if(!liste.length) {
+    document.getElementById('abw-chef-liste').innerHTML =
+      '<div style="color:var(--text2);font-size:13px;padding:32px;text-align:center">Keine Einträge</div>'
+    return
+  }
+
+  const typIcons  = {urlaub:'ti-beach', krank:'ti-thermometer', sonstiges:'ti-calendar-x'}
+  const typLabels = {urlaub:'Urlaub', krank:'Krankmeldung', sonstiges:'Sonstiges'}
+
+  document.getElementById('abw-chef-liste').innerHTML = liste.map((a,idx) => {
+    const ma   = mitarbeiter.find(m=>m.id===a.mitarbeiter_id)
+    const f    = FARBEN[ma?.farbe_idx||0]
+    const ini  = ((ma?.vorname?ma.vorname[0]:'')+(ma?.nachname?ma.nachname[0]:'')).toUpperCase()||'?'
+    const tage = Math.round((new Date(a.bis_datum)-new Date(a.von_datum))/86400000)+1
+    const statusFarbe = {ausstehend:'var(--amber)',genehmigt:'var(--green)',abgelehnt:'var(--red)'}[a.status]||'var(--text3)'
+    const statusBg    = {ausstehend:'var(--amber-bg)',genehmigt:'var(--green-bg)',abgelehnt:'var(--red-bg)'}[a.status]||'var(--bg3)'
+    const statusLabel = {ausstehend:'Ausstehend',genehmigt:'✓ Genehmigt',abgelehnt:'✗ Abgelehnt'}[a.status]||a.status
+
+    return `<div style="background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:10px">
+      <div style="display:grid;grid-template-columns:36px 1fr auto;gap:10px;align-items:center;padding:12px 14px;cursor:pointer" onclick="toggleChefChat('${a.id}')">
+        <div style="width:34px;height:34px;border-radius:50%;background:${f.bg};color:${f.txt};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500">${ini}</div>
+        <div>
+          <div style="font-size:13px;font-weight:500">
+            <i class="ti ${typIcons[a.typ]||'ti-calendar'}" style="font-size:13px;vertical-align:-2px;margin-right:4px" aria-hidden="true"></i>
+            ${ma?.nachname||'?'} · ${typLabels[a.typ]||a.typ}
+          </div>
+          <div style="font-size:11px;color:var(--text2);margin-top:2px">${formatDatumChef(a.von_datum)} – ${formatDatumChef(a.bis_datum)} · ${tage} Tag${tage!==1?'e':''}</div>
+        </div>
+        <span style="font-size:10px;font-weight:500;padding:3px 9px;border-radius:10px;background:${statusBg};color:${statusFarbe}">${statusLabel}</span>
+      </div>
+      ${a.status==='ausstehend'?`
+      <div style="display:flex;gap:8px;padding:0 14px 12px">
+        <button onclick="entscheideAbwesenheit('${a.id}','genehmigt')"
+          style="flex:1;background:var(--green-bg);color:var(--green-text);border:0.5px solid var(--green);border-radius:var(--radius);padding:8px;font-size:13px;font-weight:500;cursor:pointer">
+          ✓ Genehmigen
+        </button>
+        <button onclick="entscheideAbwesenheit('${a.id}','abgelehnt')"
+          style="flex:1;background:var(--red-bg);color:var(--red-text);border:0.5px solid var(--red);border-radius:var(--radius);padding:8px;font-size:13px;font-weight:500;cursor:pointer">
+          ✗ Ablehnen
+        </button>
+      </div>`:''}
+      <div id="chef-chat-${a.id}" style="display:none;border-top:0.5px solid var(--border)">
+        <div id="chef-chat-body-${a.id}" style="padding:10px 14px;max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;background:var(--bg3)">
+        </div>
+        <div style="padding:8px 12px;display:flex;gap:6px;align-items:flex-end">
+          <textarea id="chef-chat-inp-${a.id}" placeholder="Antwort..." rows="1"
+            style="flex:1;font-size:13px;padding:7px 10px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg2);color:var(--text);resize:none;font-family:var(--font)"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChefMsg('${a.id}','${a.mitarbeiter_id}')}"></textarea>
+          <button onclick="sendChefMsg('${a.id}','${a.mitarbeiter_id}')"
+            style="background:var(--blue);color:#fff;border:none;border-radius:var(--radius);padding:8px 12px;cursor:pointer">
+            <i class="ti ti-send" aria-hidden="true"></i>
+          </button>
+        </div>
+      </div>
+    </div>`
+  }).join('')
+}
+
+async function toggleChefChat(abwId) {
+  const el = document.getElementById('chef-chat-'+abwId)
+  const isOpen = el.style.display !== 'none'
+  if(isOpen) { el.style.display = 'none'; return }
+  el.style.display = 'block'
+  await ladeChefChat(abwId)
+}
+
+async function ladeChefChat(abwId) {
+  try {
+    const msgs = await sbGet('nachrichten', `abwesenheit_id=eq.${abwId}&order=erstellt_am&select=*`)
+    const body = document.getElementById('chef-chat-body-'+abwId)
+    if(!body) return
+    if(!msgs.length) {
+      body.innerHTML = '<div style="text-align:center;font-size:11px;color:var(--text3);padding:8px">Noch keine Nachrichten</div>'
+      return
+    }
+    body.innerHTML = msgs.map(m => {
+      const ma = mitarbeiter.find(x=>x.id===m.mitarbeiter_id)
+      return `<div style="max-width:80%;padding:7px 11px;border-radius:10px;font-size:12px;align-self:${m.von==='chef'?'flex-end':'flex-start'};background:${m.von==='chef'?'var(--blue-bg)':'var(--bg2)'};color:${m.von==='chef'?'var(--blue-text)':'var(--text)'}">
+        ${m.text?`<div>${m.text}</div>`:''}
+        ${m.foto_url?`<img src="${m.foto_url}" style="max-width:160px;max-height:160px;border-radius:6px;display:block;margin-top:4px;cursor:pointer" onclick="window.open('${m.foto_url}','_blank')" alt="Foto">` :''}
+        <div style="font-size:9px;opacity:.6;margin-top:2px">${new Date(m.erstellt_am).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})} · ${m.von==='chef'?'Chef':ma?.nachname||'MA'}</div>
+      </div>`
+    }).join('')
+    body.scrollTop = body.scrollHeight
+  } catch(e) { console.log('Chef-Chat:', e) }
+}
+
+async function sendChefMsg(abwId, maId) {
+  const inp = document.getElementById('chef-chat-inp-'+abwId)
+  const text = inp?.value.trim()
+  if(!text) return
+  inp.value = ''
+  try {
+    await sbPost('nachrichten', {
+      abwesenheit_id: abwId,
+      mitarbeiter_id: maId,
+      von: 'chef',
+      text,
+      gelesen: false
+    })
+    await ladeChefChat(abwId)
+    await sendPushAnMA({ maId, titel: '💬 Nachricht vom Chef', text: text.substring(0,80) })
+  } catch(e) { alert('Fehler: '+e.message) }
+}
+
+async function entscheideAbwesenheit(abwId, status) {
+  const label = status === 'genehmigt' ? 'genehmigen' : 'ablehnen'
+  if(!confirm(`Antrag wirklich ${label}?`)) return
+  try {
+    await sbPatch('abwesenheiten', abwId, { status, bearbeitet_am: new Date().toISOString() })
+    // Push an MA
+    const a   = abwesenheitenChef.find(x=>x.id===abwId)
+    const icon = status==='genehmigt' ? '✅' : '❌'
+    const typ  = a?.typ==='urlaub' ? 'Urlaubsantrag' : 'Krankmeldung'
+    if(a) await sendPushAnMA({ maId: a.mitarbeiter_id, titel: `${icon} ${typ} ${status==='genehmigt'?'genehmigt':'abgelehnt'}`, text: `${formatDatumChef(a?.von_datum)} – ${formatDatumChef(a?.bis_datum)}` })
+    await ladeAbwesenheitChef()
+  } catch(e) { alert('Fehler: '+e.message) }
+}
+
+function formatDatumChef(d) {
+  if(!d) return '—'
+  return new Date(d+'T12:00:00').toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'})
+}
+
 function setView(v) {
   curView = v
-  const views = ['dispoplan','cockpit','export','mitarbeiter','objekte','design']
+  const views = ['dispoplan','cockpit','abwesenheit','export','mitarbeiter','objekte','design']
   views.forEach(name => {
     const el = document.getElementById('view-'+name)
     if(el) el.style.display = name===v ? 'block' : 'none'
@@ -2161,9 +2332,10 @@ function setView(v) {
   document.querySelectorAll('.nav-tab').forEach((tab,i) => {
     tab.className = 'nav-tab' + (views[i]===v?' active':'')
   })
-  if(v === 'cockpit') ladeKockpit()
-  if(v === 'design')  initDesign()
-  if(v === 'export')  initExport()
+  if(v === 'cockpit')     ladeKockpit()
+  if(v === 'design')      initDesign()
+  if(v === 'export')      initExport()
+  if(v === 'abwesenheit') ladeAbwesenheitChef()
 }
 
 function setGridView(v) {
