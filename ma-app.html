@@ -236,7 +236,11 @@
       <div class="tb-name" id="tb-name"></div>
       <div class="tb-date" id="tb-date"></div>
     </div>
-    <div style="display:flex;align-items:center">
+    <div style="display:flex;align-items:center;gap:6px">
+      <button id="push-aktivieren-btn" onclick="pushManuellAktivieren()"
+        style="display:none;background:var(--amber-bg);color:var(--amber-text);border:0.5px solid var(--amber);border-radius:var(--radius);padding:5px 10px;font-size:11px;font-weight:500;cursor:pointer">
+        🔔 Push aktivieren
+      </button>
       <div class="lang-toggle">
         <button class="lang-btn on" id="lb-de" onclick="setLang('de')">DE</button>
         <button class="lang-btn" id="lb-pl" onclick="setLang('pl')">PL</button>
@@ -407,18 +411,38 @@ function logout(){
 async function registrierePush(maId) {
   try {
     if(!window.OneSignal) return
-    // Berechtigung anfragen
-    await OneSignal.Notifications.requestPermission()
-    // External ID setzen (= Supabase MA-ID)
-    await OneSignal.login(maId)
-    // OneSignal Player-ID in Supabase speichern
-    const playerId = await OneSignal.User.PushSubscription.id
-    if(playerId) {
-      await sbPatch('mitarbeiter', maId, {onesignal_id: playerId})
+    const permission = OneSignal.Notifications.permission
+    if(!permission) {
+      // Noch nicht erlaubt — Button anzeigen
+      document.getElementById('push-aktivieren-btn').style.display = 'block'
+      return
     }
+    // Bereits erlaubt — direkt registrieren
+    await OneSignal.login(maId)
+    const playerId = await OneSignal.User.PushSubscription.id
+    if(playerId) await sbPatch('mitarbeiter', maId, {onesignal_id: playerId})
+    document.getElementById('push-aktivieren-btn').style.display = 'none'
   } catch(e) {
     console.log('Push-Registrierung:', e.message)
+    document.getElementById('push-aktivieren-btn').style.display = 'block'
   }
+}
+
+async function pushManuellAktivieren() {
+  try {
+    if(!window.OneSignal) { alert('OneSignal nicht geladen'); return }
+    await OneSignal.Notifications.requestPermission()
+    const granted = OneSignal.Notifications.permission
+    if(granted) {
+      await OneSignal.login(curMa.id)
+      const playerId = await OneSignal.User.PushSubscription.id
+      if(playerId) await sbPatch('mitarbeiter', curMa.id, {onesignal_id: playerId})
+      document.getElementById('push-aktivieren-btn').style.display = 'none'
+      alert('✓ Push-Benachrichtigungen aktiviert!')
+    } else {
+      alert('Push wurde nicht erlaubt.\n\nBitte in den Handy-Einstellungen → Safari/Chrome → Benachrichtigungen für rjcd-app.vercel.app erlauben.')
+    }
+  } catch(e) { console.log('Push manuell:', e) }
 }
 
 async function sendePushAnChef(titel, text) {
