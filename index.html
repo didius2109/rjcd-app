@@ -703,6 +703,10 @@ async function init() {
     // Design laden und anwenden
     const d = await ladeDesign()
     wendeDesignAn(d)
+    // Abwesenheiten laden für Dispoplan
+    try {
+      abwesenheitenChef = await sbGet('abwesenheiten', 'status=eq.genehmigt&select=*')
+    } catch(e) { abwesenheitenChef = [] }
     await loadWoche()
     renderMaGrid()
     renderObjGrid()
@@ -799,17 +803,17 @@ function renderGrid() {
   const today = new Date(); today.setHours(0,0,0,0)
   const tagU = Array(7).fill(0)
   auftraege.forEach(a => {
-    // Datum als lokale Zeit parsen (nicht UTC) — z.B. "2026-05-28" → 28.05. statt 27.05.
     const parts = a.datum.split('-').map(Number)
     const d = new Date(parts[0], parts[1]-1, parts[2])
     const idx = Math.round((d - mo) / 86400000)
     if(idx >= 0 && idx < 7) tagU[idx] += auftragUmsatz(a)
   })
 
+  // Abwesenheiten für diese Woche vorfiltern
+  const wochenAbw = (abwesenheitenChef||[]).filter(a => a.status === 'genehmigt')
+
   let html = '<div class="dispo-grid">'
-  // Ecke
   html += '<div class="grid-hdr" style="background:var(--bg3);border-right:0.5px solid var(--border);border-bottom:0.5px solid var(--border)"></div>'
-  // Tage Header
   for(let d=0; d<6; d++) {
     const dd = addDays(mo, d)
     const isToday = dd.getTime() === today.getTime()
@@ -820,7 +824,6 @@ function renderGrid() {
     </div>`
   }
 
-  // MA Zeilen
   mitarbeiter.forEach(ma => {
     const f = FARBEN[ma.farbe_idx || 0]
     const ini = ((ma.vorname?ma.vorname[0]:'') + (ma.nachname?ma.nachname[0]:'')).toUpperCase() || '?'
@@ -836,7 +839,29 @@ function renderGrid() {
       const dd = addDays(mo, d)
       const dayStr = toISO(dd)
       const tagesA = auftraege.filter(a => a.datum === dayStr && a.mitarbeiter_id === ma.id)
+
+      // Abwesenheit für diesen Tag prüfen
+      const abw = wochenAbw.find(a =>
+        a.mitarbeiter_id === ma.id &&
+        dayStr >= a.von_datum &&
+        dayStr <= a.bis_datum
+      )
+
       html += '<div class="grid-cell">'
+
+      // Abwesenheits-Chip anzeigen wenn vorhanden
+      if(abw) {
+        const abwFarbe = abw.typ === 'krank'
+          ? {bg:'#FCEBEB', txt:'#A32D2D'}
+          : {bg:'#E1F5EE', txt:'#085041'}
+        const abwIcon = abw.typ === 'krank' ? '🤒' : '🏖️'
+        const abwLabel = abw.typ === 'krank' ? 'Krank' : 'Urlaub'
+        html += `<div class="chip" style="background:${abwFarbe.bg};color:${abwFarbe.txt};border:0.5px solid ${abwFarbe.txt}30"
+          onclick="setView('abwesenheit')" title="${abwLabel} — zum Antrag">
+          <div class="chip-obj">${abwIcon} ${abwLabel}</div>
+        </div>`
+      }
+
       tagesA.forEach(a => {
         const u = auftragUmsatz(a)
         const obj = getObjData(a.objekt_id)
@@ -851,7 +876,6 @@ function renderGrid() {
     }
   })
 
-  // Summen-Zeile
   html += '<div class="sum-corner">Tagessumme</div>'
   for(let d=0; d<6; d++) {
     html += `<div class="sum-cell">${tagU[d]>0?fmtEur(tagU[d]):'—'}</div>`
@@ -2314,6 +2338,9 @@ async function entscheideAbwesenheit(abwId, status) {
     const typ  = a?.typ==='urlaub' ? 'Urlaubsantrag' : 'Krankmeldung'
     if(a) await sendPushAnMA({ maId: a.mitarbeiter_id, titel: `${icon} ${typ} ${status==='genehmigt'?'genehmigt':'abgelehnt'}`, text: `${formatDatumChef(a?.von_datum)} – ${formatDatumChef(a?.bis_datum)}` })
     await ladeAbwesenheitChef()
+    // Dispoplan sofort aktualisieren
+    try { abwesenheitenChef = await sbGet('abwesenheiten', 'status=eq.genehmigt&select=*') } catch(e) {}
+    renderGrid()
   } catch(e) { alert('Fehler: '+e.message) }
 }
 
