@@ -174,7 +174,7 @@
     .cbadge.blu { background: var(--blue-bg); color: var(--blue-text); }
     .cbadge.gry { background: var(--bg3); color: var(--text2); border: 0.5px solid var(--border2); }
     /* PIN LOGIN */
-    .pin-overlay{position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;align-items:center;justify-content:center}
+    .pin-overlay{display:none;position:fixed;inset:0;background:var(--bg);z-index:999;align-items:center;justify-content:center}
     .pin-box{background:var(--bg2);border:0.5px solid var(--border2);border-radius:var(--radius-lg);padding:28px 24px;width:320px;text-align:center}
     .pin-logo{font-size:28px;font-weight:500;margin-bottom:4px}
     .pin-sub{font-size:12px;color:var(--text2);margin-bottom:20px}
@@ -863,6 +863,8 @@ let inaktivTimer = null
 const PIN_TIMEOUT = 30 * 60 * 1000  // 30 Minuten
 
 async function initPinLogin() {
+  // PIN Overlay anzeigen
+  document.getElementById('pin-overlay').style.display = 'flex'
   try {
     chefAccounts = await sbGet('chef_accounts', 'aktiv=eq.true&order=name&select=id,name,pin,rolle,onesignal_id')
     renderPinMaAuswahl()
@@ -937,7 +939,6 @@ function pinErfolgreich(chef) {
   renderMaGrid()
   renderObjGrid()
   renderKPI()
-  // Inaktiv-Timer starten
   startInaktivTimer()
   // Push für Chef registrieren
   registriereChefPush(chef.id)
