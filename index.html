@@ -546,8 +546,19 @@
         </div>
       </div>
 
-      <!-- Speichern -->
-      <div style="background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;margin-top:14px;flex-wrap:wrap;gap:8px">
+      <!-- Fahrzeit-Einstellungen -->
+      <div style="background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:16px;margin-top:14px">
+        <div style="font-size:13px;font-weight:500;margin-bottom:12px;display:flex;align-items:center;gap:6px">
+          <i class="ti ti-car" aria-hidden="true"></i> Fahrzeitanrechnung
+        </div>
+        <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:3px">Mindestdistanz Luftlinie für Anrechnung (km)</label>
+        <div style="display:flex;align-items:center;gap:10px">
+          <input type="number" id="d-fahrzeit-grenze" value="14" min="5" max="30" step="1"
+            style="width:80px;font-size:14px;text-align:center;padding:7px 10px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text)">
+          <span style="font-size:12px;color:var(--text2)">km Luftlinie ≈ ${Math.round(14*1.4)} km Fahrtstrecke</span>
+        </div>
+        <div style="font-size:10px;color:var(--text3);margin-top:4px">14km Luftlinie entspricht ca. 20km realer Fahrtstrecke (Faktor 1.4)</div>
+      </div>
         <div style="font-size:12px;color:var(--text2)">Änderungen gelten sofort in Chef-App und MA-App</div>
         <div style="display:flex;gap:8px">
           <button onclick="resetDesignApp()" style="background:none;border:0.5px solid var(--border2);border-radius:var(--radius);padding:8px 14px;font-size:12px;cursor:pointer;color:var(--text2)">Zurücksetzen</button>
@@ -2139,7 +2150,9 @@ setInterval(() => {
 
 // ── FAHRZEIT-BERECHNUNG ───────────────────────────────────────
 const MAPS_KEY = 'AIzaSyA2FNCIFIAgOmLVVufRb53kxpmt3Erd3sU'
-const FAHRZEIT_GRENZE_KM = 20
+// Luftlinie 14km ≈ ~20km Fahrtstrecke (Faktor 1.4 für ländliche Gebiete NRW)
+// Kann in Design-Einstellungen angepasst werden
+let FAHRZEIT_GRENZE_KM = 14
 
 async function berechneFahrzeit(vonAdresse, nachAdresse) {
   try {
@@ -2310,6 +2323,10 @@ async function initDesign() {
     if(d.emoji)    designState.emoji = d.emoji
     if(d.logo)   { designLogoUrl = d.logo }
     if(d.modus)    designState.modus = d.modus
+    if(d.fahrzeit_grenze) {
+      FAHRZEIT_GRENZE_KM = parseInt(d.fahrzeit_grenze) || 14
+      document.getElementById('d-fahrzeit-grenze').value = d.fahrzeit_grenze
+    }
     wendeDesignAn(d)
     updateDesignPreview()
   } catch(e) {}
@@ -2382,6 +2399,7 @@ async function speichereDesignApp() {
     emoji:      designState.emoji,
     logo:       designLogoUrl || '',
     modus:      designState.modus,
+    fahrzeit_grenze: document.getElementById('d-fahrzeit-grenze').value || '14',
   }
   try {
     for(const [k, v] of Object.entries(felder)) {
