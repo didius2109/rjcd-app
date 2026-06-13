@@ -933,6 +933,10 @@ function pinErfolgreich(chef) {
   sessionStorage.setItem('chefLogin', JSON.stringify({id:chef.id, name:chef.name, ts:Date.now()}))
   document.getElementById('pin-overlay').style.display = 'none'
   document.getElementById('app-main').style.display = 'grid'
+  // Daten neu rendern nach Login
+  renderMaGrid()
+  renderObjGrid()
+  renderKPI()
   // Inaktiv-Timer starten
   startInaktivTimer()
   // Push für Chef registrieren
