@@ -259,10 +259,15 @@
         <div class="kpi"><div class="kpi-label">Lade...</div><div class="kpi-value">—</div></div>
       </div>
       <div class="toolbar">
-        <div class="week-nav">
+        <div class="week-nav" id="nav-woche-bar">
           <button class="week-btn" onclick="changeWeek(-1)"><i class="ti ti-chevron-left"></i></button>
           <span class="week-label" id="week-label">Lade...</span>
           <button class="week-btn" onclick="changeWeek(1)"><i class="ti ti-chevron-right"></i></button>
+        </div>
+        <div class="week-nav" id="nav-monat-bar" style="display:none">
+          <button class="week-btn" onclick="changeMonat(-1)"><i class="ti ti-chevron-left"></i></button>
+          <span class="week-label" id="monat-label">Lade...</span>
+          <button class="week-btn" onclick="changeMonat(1)"><i class="ti ti-chevron-right"></i></button>
         </div>
         <div class="toolbar-right">
           <div class="view-toggle">
@@ -2389,7 +2394,7 @@ async function ladeMonat() {
 
   // Wochenbeschriftung in Toolbar aktualisieren
   const monatName = erster.toLocaleDateString('de-DE', {month:'long', year:'numeric'})
-  document.getElementById('week-label').textContent = monatName
+  document.getElementById('monat-label').textContent = monatName
 
   try {
     monatAuftraege = await sbGet('auftraege',
@@ -2515,11 +2520,17 @@ function renderMonat() {
 }
 
 function wechselZuTag(dayStr) {
-  // Zur Tagesansicht wechseln und auf diesen Tag navigieren
-  const d = parseDatum(dayStr)
-  const mo = getMonday(0)
-  const diff = Math.round((d - mo) / (7*86400000))
-  curWeek = diff
+  // Wochenoffset berechnen
+  const zielDatum = parseDatum(dayStr)
+  const heute = new Date(); heute.setHours(0,0,0,0)
+  const aktMo = getMonday(0)  // Montag der aktuellen Woche
+  const zielMo = new Date(zielDatum)
+  // Montag der Zielwoche finden
+  const zielWt = zielDatum.getDay() || 7
+  zielMo.setDate(zielDatum.getDate() - zielWt + 1)
+  zielMo.setHours(0,0,0,0)
+  // Offset in Wochen
+  curWeek = Math.round((zielMo - aktMo) / (7*86400000))
   setGridView('tag')
 }
 
@@ -2528,16 +2539,15 @@ function setGridView(v) {
   document.querySelectorAll('.vt-btn').forEach((b,i) => {
     b.className = 'vt-btn' + (['woche','tag','monat'][i]===v?' active':'')
   })
+  // Navbar umschalten
+  document.getElementById('nav-woche-bar').style.display = v==='monat' ? 'none' : 'flex'
+  document.getElementById('nav-monat-bar').style.display = v==='monat' ? 'flex' : 'none'
+
   if(v === 'woche') { loadWoche() }
   if(v === 'tag')   { loadWoche().then(()=>renderTag()) }
   if(v === 'monat') {
     curMonat = new Date().getMonth()
     curMonatJahr = new Date().getFullYear()
-    // Toolbar auf Monatsnavigation umschalten
-    document.querySelector('.week-nav').innerHTML = `
-      <button class="week-btn" onclick="changeMonat(-1)"><i class="ti ti-chevron-left"></i></button>
-      <span class="week-label" id="week-label">Lade...</span>
-      <button class="week-btn" onclick="changeMonat(1)"><i class="ti ti-chevron-right"></i></button>`
     ladeMonat()
   }
 }
