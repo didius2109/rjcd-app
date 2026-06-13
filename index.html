@@ -173,6 +173,18 @@
     .cbadge.red { background: var(--red-bg); color: var(--red-text); }
     .cbadge.blu { background: var(--blue-bg); color: var(--blue-text); }
     .cbadge.gry { background: var(--bg3); color: var(--text2); border: 0.5px solid var(--border2); }
+    /* MONATSKALENDER */
+    .monat-grid { display: grid; grid-template-columns: repeat(7, 1fr); border: 0.5px solid var(--border2); border-radius: var(--radius-lg); overflow: hidden; background: var(--bg2); }
+    .monat-hdr { background: var(--bg3); padding: 6px 4px; font-size: 11px; font-weight: 500; color: var(--text2); text-align: center; border-right: 0.5px solid var(--border); border-bottom: 0.5px solid var(--border); }
+    .monat-tag { border-right: 0.5px solid var(--border); border-bottom: 0.5px solid var(--border); min-height: 90px; padding: 4px; vertical-align: top; background: var(--bg2); }
+    .monat-tag.heute { background: var(--blue-bg); }
+    .monat-tag.anderer-monat { background: var(--bg3); opacity: .6; }
+    .monat-tag-nr { font-size: 11px; font-weight: 500; color: var(--text2); margin-bottom: 3px; display: flex; align-items: center; justify-content: space-between; }
+    .monat-tag-nr.heute-nr { color: var(--blue); font-weight: 600; }
+    .monat-chip { font-size: 9px; font-weight: 500; padding: 2px 5px; border-radius: 4px; margin-bottom: 2px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: opacity .12s; display: block; }
+    .monat-chip:hover { opacity: .8; }
+    .monat-mehr { font-size: 9px; color: var(--text3); cursor: pointer; padding: 1px 3px; }
+
     @media (max-width: 600px) { .cd-grid { grid-template-columns: 1fr 1fr; } }
       .kpi-grid { grid-template-columns: repeat(2, 1fr); }
       .dispo-grid { grid-template-columns: 80px repeat(6, 1fr); font-size: 10px; }
@@ -256,6 +268,7 @@
           <div class="view-toggle">
             <button class="vt-btn active" onclick="setGridView('woche')">Woche</button>
             <button class="vt-btn" onclick="setGridView('tag')">Tag</button>
+            <button class="vt-btn" onclick="setGridView('monat')">Monat</button>
           </div>
           <button class="week-btn" onclick="openKopierenModal()" title="Aufträge aus Vorwoche kopieren" style="display:flex;align-items:center;gap:4px;font-size:12px">
             <i class="ti ti-copy"></i> Kopieren
@@ -2365,13 +2378,175 @@ function setView(v) {
   if(v === 'abwesenheit') ladeAbwesenheitChef()
 }
 
+// ── MONATSANSICHT ─────────────────────────────────────────────
+let curMonat = new Date().getMonth()
+let curMonatJahr = new Date().getFullYear()
+let monatAuftraege = []
+
+async function ladeMonat() {
+  const erster = new Date(curMonatJahr, curMonat, 1)
+  const letzter = new Date(curMonatJahr, curMonat+1, 0)
+
+  // Wochenbeschriftung in Toolbar aktualisieren
+  const monatName = erster.toLocaleDateString('de-DE', {month:'long', year:'numeric'})
+  document.getElementById('week-label').textContent = monatName
+
+  try {
+    monatAuftraege = await sbGet('auftraege',
+      `datum=gte.${toISO(erster)}&datum=lte.${toISO(letzter)}&order=datum,soll_start&select=*`)
+  } catch(e) { monatAuftraege = [] }
+  renderMonat()
+}
+
+function renderMonat() {
+  const heute = toISO(new Date())
+  const erster = new Date(curMonatJahr, curMonat, 1)
+  const letzter = new Date(curMonatJahr, curMonat+1, 0)
+
+  // Wochentag des ersten Tags (0=So, 1=Mo...)
+  let startWt = erster.getDay()
+  if(startWt === 0) startWt = 7  // Sonntag = 7 in EU-Format
+  startWt -= 1  // 0-basiert Mo=0
+
+  const TAGE_LANG = ['Mo','Di','Mi','Do','Fr','Sa','So']
+
+  let html = `<div class="monat-grid">`
+
+  // Wochentag-Header
+  TAGE_LANG.forEach(t => {
+    html += `<div class="monat-hdr">${t}</div>`
+  })
+
+  // Leere Zellen vor dem 1.
+  for(let i=0; i<startWt; i++) {
+    html += `<div class="monat-tag anderer-monat"></div>`
+  }
+
+  // Tage des Monats
+  for(let tag=1; tag<=letzter.getDate(); tag++) {
+    const datum = new Date(curMonatJahr, curMonat, tag)
+    const dayStr = toISO(datum)
+    const istHeute = dayStr === heute
+    const wochentag = datum.getDay()
+    const istWE = wochentag === 0 || wochentag === 6
+
+    // Aufträge dieses Tages
+    const tagesA = monatAuftraege.filter(a => a.datum === dayStr)
+
+    // Abwesenheiten dieses Tages
+    const tagesAbw = (abwesenheitenChef||[]).filter(a =>
+      a.status === 'genehmigt' && dayStr >= a.von_datum && dayStr <= a.bis_datum)
+
+    html += `<div class="monat-tag ${istHeute?'heute':''}" style="${istWE?'background:var(--bg3)':''}">`
+    html += `<div class="monat-tag-nr ${istHeute?'heute-nr':''}">
+      <span>${tag}</span>
+      ${tagesA.length ? `<span style="font-size:9px;background:var(--blue-bg);color:var(--blue-text);padding:1px 5px;border-radius:8px">${tagesA.length}</span>` : ''}
+    </div>`
+
+    // Abwesenheits-Chips
+    tagesAbw.forEach(a => {
+      const ma = mitarbeiter.find(m=>m.id===a.mitarbeiter_id)
+      const icon = a.typ==='krank'?'🤒':'🏖️'
+      const farbe = a.typ==='krank' ? 'background:#FCEBEB;color:#A32D2D' : 'background:#E1F5EE;color:#085041'
+      html += `<span class="monat-chip" style="${farbe}" onclick="setView('abwesenheit')" title="${ma?.nachname} — ${a.typ==='krank'?'Krank':'Urlaub'}">${icon} ${ma?.nachname||'?'}</span>`
+    })
+
+    // Auftrags-Chips (max 3, dann "+X mehr")
+    const maxChips = 3 - tagesAbw.length
+    tagesA.slice(0, maxChips).forEach(a => {
+      const ma  = mitarbeiter.find(m=>m.id===a.mitarbeiter_id)
+      const obj = getObjData(a.objekt_id)
+      const f   = FARBEN[ma?.farbe_idx||0]
+      html += `<span class="monat-chip" style="background:${f.bg};color:${f.txt}"
+        onclick="openAuftragModal('${a.id}',null)"
+        title="${ma?.nachname||'?'} · ${obj.name||'?'} · ${a.soll_start||''}${a.soll_ende?'–'+a.soll_ende:''}">
+        ${ma?.nachname?.substring(0,6)||'?'} ${obj.name?.substring(0,8)||'?'}
+      </span>`
+    })
+    if(tagesA.length > maxChips) {
+      html += `<span class="monat-mehr" onclick="wechselZuTag('${dayStr}')">+${tagesA.length-maxChips} mehr</span>`
+    }
+
+    // + Button
+    html += `<span style="font-size:14px;color:var(--text3);cursor:pointer;display:block;margin-top:2px"
+      onclick="openAuftragModal(null,null,'${dayStr}')">+</span>`
+
+    html += `</div>`
+  }
+
+  // Leere Zellen nach dem letzten Tag
+  const gesamtZellen = startWt + letzter.getDate()
+  const restZellen = gesamtZellen % 7 === 0 ? 0 : 7 - (gesamtZellen % 7)
+  for(let i=0; i<restZellen; i++) {
+    html += `<div class="monat-tag anderer-monat"></div>`
+  }
+
+  html += `</div>`
+
+  // Monats-KPI
+  const monatU = monatAuftraege.reduce((s,a)=>s+auftragUmsatz(a),0)
+  const monatH = monatAuftraege.reduce((s,a)=>s+calcH(a.soll_start,a.soll_ende),0)
+  const abwCount = (abwesenheitenChef||[]).filter(a=>
+    a.status==='genehmigt' &&
+    new Date(a.von_datum).getMonth()===curMonat &&
+    new Date(a.von_datum).getFullYear()===curMonatJahr
+  ).length
+
+  html = `<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+    <div style="background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius);padding:8px 14px;font-size:12px">
+      <div style="color:var(--text2);margin-bottom:2px">Aufträge</div>
+      <div style="font-weight:500">${monatAuftraege.length}</div>
+    </div>
+    <div style="background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius);padding:8px 14px;font-size:12px">
+      <div style="color:var(--text2);margin-bottom:2px">Stunden</div>
+      <div style="font-weight:500">${monatH.toFixed(1)}h</div>
+    </div>
+    ${monatU>0?`<div style="background:var(--green-bg);border:0.5px solid rgba(29,158,117,0.2);border-radius:var(--radius);padding:8px 14px;font-size:12px">
+      <div style="color:var(--green-text);margin-bottom:2px">Monatsumsatz</div>
+      <div style="font-weight:500;color:var(--green)">${fmtEur(monatU)}</div>
+    </div>`:''}
+    ${abwCount>0?`<div style="background:var(--amber-bg);border:0.5px solid rgba(186,117,23,0.2);border-radius:var(--radius);padding:8px 14px;font-size:12px">
+      <div style="color:var(--amber-text);margin-bottom:2px">Abwesenheiten</div>
+      <div style="font-weight:500;color:var(--amber)">${abwCount}</div>
+    </div>`:''}
+  </div>` + html
+
+  document.getElementById('grid-container').innerHTML = html
+}
+
+function wechselZuTag(dayStr) {
+  // Zur Tagesansicht wechseln und auf diesen Tag navigieren
+  const d = parseDatum(dayStr)
+  const mo = getMonday(0)
+  const diff = Math.round((d - mo) / (7*86400000))
+  curWeek = diff
+  setGridView('tag')
+}
+
 function setGridView(v) {
   curGridView = v
   document.querySelectorAll('.vt-btn').forEach((b,i) => {
-    b.className = 'vt-btn' + (['woche','tag'][i]===v?' active':'')
+    b.className = 'vt-btn' + (['woche','tag','monat'][i]===v?' active':'')
   })
-  if(v === 'woche') renderGrid()
-  if(v === 'tag')   renderTag()
+  if(v === 'woche') { loadWoche() }
+  if(v === 'tag')   { loadWoche().then(()=>renderTag()) }
+  if(v === 'monat') {
+    curMonat = new Date().getMonth()
+    curMonatJahr = new Date().getFullYear()
+    // Toolbar auf Monatsnavigation umschalten
+    document.querySelector('.week-nav').innerHTML = `
+      <button class="week-btn" onclick="changeMonat(-1)"><i class="ti ti-chevron-left"></i></button>
+      <span class="week-label" id="week-label">Lade...</span>
+      <button class="week-btn" onclick="changeMonat(1)"><i class="ti ti-chevron-right"></i></button>`
+    ladeMonat()
+  }
+}
+
+function changeMonat(d) {
+  curMonat += d
+  if(curMonat > 11) { curMonat = 0; curMonatJahr++ }
+  if(curMonat < 0)  { curMonat = 11; curMonatJahr-- }
+  ladeMonat()
 }
 
 function renderTag() {
