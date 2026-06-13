@@ -2341,8 +2341,8 @@ function renderAbwesenheitChef() {
         </div>
         <span style="font-size:10px;font-weight:500;padding:3px 9px;border-radius:10px;background:${statusBg};color:${statusFarbe}">${statusLabel}</span>
       </div>
-      ${a.status==='ausstehend'?`
-      <div style="display:flex;gap:8px;padding:0 14px 12px">
+      <div style="display:flex;gap:8px;padding:0 14px 12px;flex-wrap:wrap">
+        ${a.status==='ausstehend'?`
         <button onclick="entscheideAbwesenheit('${a.id}','genehmigt')"
           style="flex:1;background:var(--green-bg);color:var(--green-text);border:0.5px solid var(--green);border-radius:var(--radius);padding:8px;font-size:13px;font-weight:500;cursor:pointer">
           ✓ Genehmigen
@@ -2350,8 +2350,26 @@ function renderAbwesenheitChef() {
         <button onclick="entscheideAbwesenheit('${a.id}','abgelehnt')"
           style="flex:1;background:var(--red-bg);color:var(--red-text);border:0.5px solid var(--red);border-radius:var(--radius);padding:8px;font-size:13px;font-weight:500;cursor:pointer">
           ✗ Ablehnen
+        </button>`:''}
+        ${a.status==='genehmigt'?`
+        <button onclick="entscheideAbwesenheit('${a.id}','abgelehnt')"
+          style="background:var(--red-bg);color:var(--red-text);border:0.5px solid var(--red);border-radius:var(--radius);padding:6px 12px;font-size:12px;cursor:pointer">
+          ✗ Genehmigung zurückziehen
+        </button>`:''}
+        ${a.status==='abgelehnt'?`
+        <button onclick="entscheideAbwesenheit('${a.id}','genehmigt')"
+          style="background:var(--green-bg);color:var(--green-text);border:0.5px solid var(--green);border-radius:var(--radius);padding:6px 12px;font-size:12px;cursor:pointer">
+          ✓ Doch genehmigen
+        </button>`:''}
+        <button onclick="bearbeiteDaten('${a.id}')"
+          style="background:none;color:var(--text2);border:0.5px solid var(--border2);border-radius:var(--radius);padding:6px 12px;font-size:12px;cursor:pointer">
+          ✏️ Datum ändern
         </button>
-      </div>`:''}
+        <button onclick="loescheAbwesenheit('${a.id}')"
+          style="background:none;color:var(--red-text);border:0.5px solid var(--red-bg);border-radius:var(--radius);padding:6px 12px;font-size:12px;cursor:pointer">
+          🗑 Löschen
+        </button>
+      </div>
       <div id="chef-chat-${a.id}" style="display:none;border-top:0.5px solid var(--border)">
         <div id="chef-chat-body-${a.id}" style="padding:10px 14px;max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;background:var(--bg3)">
         </div>
@@ -2428,6 +2446,43 @@ async function entscheideAbwesenheit(abwId, status) {
     if(a) await sendPushAnMA({ maId: a.mitarbeiter_id, titel: `${icon} ${typ} ${status==='genehmigt'?'genehmigt':'abgelehnt'}`, text: `${formatDatumChef(a?.von_datum)} – ${formatDatumChef(a?.bis_datum)}` })
     await ladeAbwesenheitChef()
     // Dispoplan sofort aktualisieren
+    try { abwesenheitenChef = await sbGet('abwesenheiten', 'status=eq.genehmigt&select=*') } catch(e) {}
+    renderGrid()
+  } catch(e) { alert('Fehler: '+e.message) }
+}
+
+function bearbeiteDaten(abwId) {
+  const a = abwesenheitenChef.find(x=>x.id===abwId)
+  if(!a) return
+  const neuesVon = prompt('Von-Datum (JJJJ-MM-TT):', a.von_datum)
+  if(!neuesVon) return
+  const neuesBis = prompt('Bis-Datum (JJJJ-MM-TT):', a.bis_datum)
+  if(!neuesBis) return
+  if(new Date(neuesBis) < new Date(neuesVon)) { alert('Bis-Datum muss nach Von-Datum sein'); return }
+  sbPatch('abwesenheiten', abwId, {
+    von_datum: neuesVon,
+    bis_datum: neuesBis,
+    bearbeitet_am: new Date().toISOString()
+  }).then(async () => {
+    await ladeAbwesenheitChef()
+    try { abwesenheitenChef = await sbGet('abwesenheiten', 'status=eq.genehmigt&select=*') } catch(e) {}
+    renderGrid()
+  }).catch(e => alert('Fehler: '+e.message))
+}
+
+async function loescheAbwesenheit(abwId) {
+  const a = abwesenheitenChef.find(x=>x.id===abwId)
+  if(!a) return
+  const ma = mitarbeiter.find(m=>m.id===a.mitarbeiter_id)
+  const typLabel = a.typ==='urlaub'?'Urlaubsantrag':'Krankmeldung'
+  if(!confirm(`${typLabel} von ${ma?.nachname||'?'} (${formatDatumChef(a.von_datum)} – ${formatDatumChef(a.bis_datum)}) wirklich löschen?`)) return
+  try {
+    // Nachrichten zuerst löschen
+    await sbDeleteWhere('nachrichten', `abwesenheit_id=eq.${abwId}`)
+    await sbDelete('abwesenheiten', abwId)
+    // Push an MA
+    await sendPushAnMA({ maId: a.mitarbeiter_id, titel: `🗑 ${typLabel} gelöscht`, text: `${formatDatumChef(a.von_datum)} – ${formatDatumChef(a.bis_datum)}` })
+    await ladeAbwesenheitChef()
     try { abwesenheitenChef = await sbGet('abwesenheiten', 'status=eq.genehmigt&select=*') } catch(e) {}
     renderGrid()
   } catch(e) { alert('Fehler: '+e.message) }
