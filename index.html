@@ -1214,34 +1214,17 @@ const OS_APP_ID  = '4b121a07-c5d1-4ff4-8470-c5c51e3fea35'
 const OS_API_KEY = '5us2twe3buuemskxgyit6qmtw'
 
 async function sendPushAnMA({ maId, titel, text, url = '/ma-app.html' }) {
-  // OneSignal API direkt vom Browser geht nicht (CORS)
-  // Wir speichern den Push-Auftrag in Supabase und ein Webhook sendet ihn
   try {
-    await sbPost('push_log', {
-      typ: 'ma_benachrichtigung',
-      mitarbeiter_id: maId,
-      titel,
-      nachricht: text,
-      erfolg: true
-    })
-    // Fallback: OneSignal über ihre REST API via no-cors (kein Response aber sendet)
-    fetch('https://onesignal.com/api/v1/notifications', {
+    const r = await fetch('https://grxpfsrctfhtamwrqooz.supabase.co/functions/v1/send-push', {
       method: 'POST',
-      mode: 'no-cors',  // Verhindert CORS-Fehler, kein Response möglich
       headers: {
-        'Content-Type':  'application/json',
-        'Authorization': `Basic ${OS_API_KEY}`,
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdyeHBmc3JjdGZodGFtd3Jxb296Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5MjExMTUsImV4cCI6MjA5NTQ5NzExNX0.gNADsG6yxVv8T3_Vni7DrOrLoMBQbu57zhy5f8pALbI`,
       },
-      body: JSON.stringify({
-        app_id:   OS_APP_ID,
-        headings: { de: titel, pl: titel },
-        contents: { de: text,  pl: text  },
-        url:      `https://rjcd-app.vercel.app${url}`,
-        include_aliases:  { external_id: [maId] },
-        target_channel:   'push',
-      })
-    }).catch(() => {})  // Fehler ignorieren — no-cors gibt immer opaque response
-    console.log('Push gesendet (no-cors):', titel)
+      body: JSON.stringify({ maId, titel, text, url })
+    })
+    const data = await r.json()
+    console.log('Push gesendet:', data)
   } catch(e) { console.log('Push Fehler:', e) }
 }
 
