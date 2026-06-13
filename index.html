@@ -288,7 +288,7 @@
     <div style="display:flex;align-items:center;gap:8px">
       <div class="status-dot" id="status-dot"></div>
       <span class="status-label" id="status-label">Verbinde...</span>
-      <button id="push-btn" onclick="aktiviereChefPush()" style="display:none;background:var(--amber-bg,#FAEEDA);color:var(--amber,#BA7517);border:0.5px solid var(--amber,#BA7517);border-radius:var(--radius);padding:4px 10px;font-size:11px;font-weight:500;cursor:pointer">
+      <button id="push-btn" onclick="aktiviereChefPush()" style="display:block;background:var(--amber-bg,#FAEEDA);color:var(--amber,#BA7517);border:0.5px solid var(--amber,#BA7517);border-radius:var(--radius);padding:4px 10px;font-size:11px;font-weight:500;cursor:pointer">
         🔔 Push aktivieren
       </button>
     </div>
@@ -874,33 +874,61 @@ function pinSperren() {
 }
 
 async function registriereChefPush(chefId) {
+  // Warten bis OneSignal bereit ist
+  let versuche = 0
+  while(!window.OneSignal && versuche < 20) {
+    await new Promise(r => setTimeout(r, 500))
+    versuche++
+  }
+  if(!window.OneSignal) {
+    console.log('OneSignal nicht geladen — Push-Button zeigen')
+    document.getElementById('push-btn').style.display = 'block'
+    return
+  }
   try {
-    if(!window.OneSignal) return
     const permission = OneSignal.Notifications.permission
+    console.log('Push Permission:', permission)
     if(!permission) {
       document.getElementById('push-btn').style.display = 'block'
       return
     }
     await OneSignal.login('chef-'+chefId)
     const playerId = await OneSignal.User.PushSubscription.id
-    if(playerId) await sbPatch('chef_accounts', chefId, {onesignal_id: playerId})
+    console.log('Chef Push ID:', playerId)
+    if(playerId) {
+      await sbPatch('chef_accounts', chefId, {onesignal_id: playerId})
+      console.log('Chef Push registriert ✓')
+    }
     document.getElementById('push-btn').style.display = 'none'
-  } catch(e) { console.log('Chef-Push:', e) }
+  } catch(e) {
+    console.log('Chef-Push Fehler:', e.message)
+    document.getElementById('push-btn').style.display = 'block'
+  }
 }
 
 // Push-Button für Chef
 async function aktiviereChefPush() {
-  if(!window.OneSignal) return
+  if(!window.OneSignal) { alert('OneSignal nicht geladen — bitte Seite neu laden'); return }
   try {
+    console.log('Push aktivieren...')
     await OneSignal.Notifications.requestPermission()
-    if(OneSignal.Notifications.permission && curChef) {
+    const permission = OneSignal.Notifications.permission
+    console.log('Permission nach Anfrage:', permission)
+    if(permission && curChef) {
       await OneSignal.login('chef-'+curChef.id)
       const playerId = await OneSignal.User.PushSubscription.id
-      if(playerId) await sbPatch('chef_accounts', curChef.id, {onesignal_id: playerId})
-      document.getElementById('push-btn').style.display = 'none'
-      alert('✓ Push-Benachrichtigungen aktiviert!')
+      console.log('Player ID:', playerId)
+      if(playerId) {
+        await sbPatch('chef_accounts', curChef.id, {onesignal_id: playerId})
+        document.getElementById('push-btn').style.display = 'none'
+        alert('✓ Push-Benachrichtigungen aktiviert!')
+      } else {
+        alert('Push erlaubt aber keine ID — bitte in Browser-Einstellungen prüfen ob Benachrichtigungen für rjcd-app.vercel.app erlaubt sind.')
+      }
+    } else {
+      alert('Push nicht erlaubt.\n\nBitte in Browser-Einstellungen → Benachrichtigungen → rjcd-app.vercel.app → Erlauben')
     }
-  } catch(e) { alert('Push: '+e.message) }
+  } catch(e) { alert('Push Fehler: '+e.message) }
 }
 
 // Session prüfen beim Start
