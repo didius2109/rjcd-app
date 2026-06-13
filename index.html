@@ -413,44 +413,6 @@
       </div>
     </div>
 
-    <!-- FAHRZEITEN MODAL -->
-    <div class="modal-bg" id="fz-modal">
-      <div class="modal">
-        <h3 id="fz-modal-titel">Fahrzeit eintragen</h3>
-        <label>Datum</label>
-        <input type="date" id="fz-datum" style="width:100%;font-size:13px;padding:7px 10px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text)">
-        <label>Mitarbeiter</label>
-        <select id="fz-ma" style="width:100%;font-size:13px;padding:7px 10px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text)"></select>
-        <label>Von</label>
-        <input type="text" id="fz-von" placeholder="z.B. Heimatadresse" style="width:100%;font-size:13px;padding:7px 10px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text)">
-        <label>Nach</label>
-        <input type="text" id="fz-nach" placeholder="z.B. Kundenadresse" style="width:100%;font-size:13px;padding:7px 10px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text)">
-        <div class="r2">
-          <div>
-            <label>Strecke gesamt (km)</label>
-            <input type="number" id="fz-km" placeholder="z.B. 42" min="0" step="0.1"
-              style="width:100%;font-size:13px;padding:7px 10px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text)"
-              oninput="berechneMinutenAuto()">
-          </div>
-          <div>
-            <label>Fahrzeit gesamt (Min.)</label>
-            <input type="number" id="fz-min" placeholder="z.B. 60" min="0" step="5"
-              style="width:100%;font-size:13px;padding:7px 10px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text)">
-          </div>
-        </div>
-        <div style="font-size:10px;color:var(--text3);margin-top:4px">Hin- und Rückfahrt zusammen. Minuten werden aus km berechnet (60 km/h).</div>
-        <div style="background:var(--bg3);border-radius:var(--radius);padding:10px;margin-top:10px;display:flex;align-items:center;gap:8px">
-          <input type="checkbox" id="fz-angerechnet" style="width:16px;height:16px;accent-color:var(--green);cursor:pointer">
-          <label for="fz-angerechnet" style="font-size:13px;font-weight:500;cursor:pointer">Als Arbeitszeit anrechnen</label>
-        </div>
-        <div style="font-size:10px;color:var(--text3);margin-top:3px">Wird automatisch gesetzt wenn Strecke über 20km</div>
-        <div class="modal-btns">
-          <button class="mbtn-cancel" onclick="closeModal('fz-modal')">Abbrechen</button>
-          <button class="mbtn-del" id="fz-del" style="display:none" onclick="loescheFahrzeit()"><i class="ti ti-trash"></i></button>
-          <button class="mbtn-save" onclick="speichereFahrzeit()">Speichern</button>
-        </div>
-      </div>
-    </div>
 
     <!-- ABWESENHEIT VIEW -->
     <div id="view-abwesenheit" style="display:none">
@@ -684,6 +646,44 @@
       </div>
     </div>
   </main>
+<!-- FAHRZEITEN MODAL -->
+<div class="modal-bg" id="fz-modal">
+      <div class="modal">
+        <h3 id="fz-modal-titel">Fahrzeit eintragen</h3>
+        <label>Datum</label>
+        <input type="date" id="fz-datum" style="width:100%;font-size:13px;padding:7px 10px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text)">
+        <label>Mitarbeiter</label>
+        <select id="fz-ma" style="width:100%;font-size:13px;padding:7px 10px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text)"></select>
+        <label>Von</label>
+        <input type="text" id="fz-von" placeholder="z.B. Heimatadresse" style="width:100%;font-size:13px;padding:7px 10px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text)">
+        <label>Nach</label>
+        <input type="text" id="fz-nach" placeholder="z.B. Kundenadresse" style="width:100%;font-size:13px;padding:7px 10px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text)">
+        <div class="r2">
+          <div>
+            <label>Strecke gesamt (km)</label>
+            <input type="number" id="fz-km" placeholder="z.B. 42" min="0" step="0.1"
+              style="width:100%;font-size:13px;padding:7px 10px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text)"
+              oninput="berechneMinutenAuto()">
+      </div>
+          <div>
+            <label>Fahrzeit gesamt (Min.)</label>
+            <input type="number" id="fz-min" placeholder="z.B. 60" min="0" step="5"
+              style="width:100%;font-size:13px;padding:7px 10px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text)">
+      </div>
+    </div>
+        <div style="font-size:10px;color:var(--text3);margin-top:4px">Hin- und Rückfahrt zusammen. Minuten werden aus km berechnet (60 km/h).</div>
+        <div style="background:var(--bg3);border-radius:var(--radius);padding:10px;margin-top:10px;display:flex;align-items:center;gap:8px">
+          <input type="checkbox" id="fz-angerechnet" style="width:16px;height:16px;accent-color:var(--green);cursor:pointer">
+          <label for="fz-angerechnet" style="font-size:13px;font-weight:500;cursor:pointer">Als Arbeitszeit anrechnen</label>
+    </div>
+        <div style="font-size:10px;color:var(--text3);margin-top:3px">Wird automatisch gesetzt wenn Strecke über 20km</div>
+        <div class="modal-btns">
+          <button class="mbtn-cancel" onclick="closeModal('fz-modal')">Abbrechen</button>
+          <button class="mbtn-del" id="fz-del" style="display:none" onclick="loescheFahrzeit()"><i class="ti ti-trash"></i></button>
+          <button class="mbtn-save" onclick="speichereFahrzeit()">Speichern</button>
+    </div>
+  </div>
+
 </div><!-- end app-main -->
 <div class="modal-bg" id="auftrag-modal">
   <div class="modal">
