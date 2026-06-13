@@ -2857,6 +2857,9 @@ function setView(v) {
   document.querySelectorAll('.nav-tab').forEach((tab,i) => {
     tab.className = 'nav-tab' + (views[i]===v?' active':'')
   })
+  // Scroll zurück nach oben
+  document.querySelector('.main').scrollTop = 0
+  window.scrollTo(0, 0)
   if(v === 'cockpit')     ladeKockpit()
   if(v === 'design')      initDesign()
   if(v === 'export')      initExport()
