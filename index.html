@@ -279,6 +279,7 @@
         <button class="nav-tab active" onclick="setView('dispoplan')"><i class="ti ti-calendar-week"></i> Dispoplan</button>
         <button class="nav-tab" onclick="setView('cockpit')"><i class="ti ti-activity"></i> Cockpit</button>
         <button class="nav-tab" onclick="setView('abwesenheit')" id="nav-abw-chef"><i class="ti ti-beach"></i> Abwesenheit</button>
+        <button class="nav-tab" onclick="setView('fahrzeiten')"><i class="ti ti-car"></i> Fahrzeiten</button>
         <button class="nav-tab" onclick="setView('export')"><i class="ti ti-file-export"></i> Export</button>
         <button class="nav-tab" onclick="setView('mitarbeiter')"><i class="ti ti-users"></i> Mitarbeiter</button>
         <button class="nav-tab" onclick="setView('objekte')"><i class="ti ti-building"></i> Objekte</button>
@@ -365,6 +366,89 @@
       </div>
       <div id="grid-container">
         <div class="loading"><div class="spinner"></div> Daten werden geladen...</div>
+      </div>
+    </div>
+
+    <!-- FAHRZEITEN VIEW -->
+    <div id="view-fahrzeiten" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+        <div>
+          <div style="font-size:16px;font-weight:500">Fahrzeiten</div>
+          <div style="font-size:12px;color:var(--text2)">Manuell erfassen oder automatisch berechnen lassen</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button onclick="berechneFahrzeitenManuell()" style="background:var(--blue-bg);color:var(--blue-text);border:0.5px solid var(--blue);border-radius:var(--radius);padding:7px 14px;font-size:12px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:5px">
+            <i class="ti ti-calculator" aria-hidden="true"></i> Heute berechnen
+          </button>
+          <button onclick="openFahrzeitModal(null)" style="background:var(--text);color:var(--bg2);border:none;border-radius:var(--radius);padding:7px 14px;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:5px">
+            <i class="ti ti-plus" aria-hidden="true"></i> Manuell eintragen
+          </button>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
+        <input type="month" id="fz-monat" style="font-size:13px;padding:6px 10px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text)" onchange="ladeFahrzeiten()">
+        <select id="fz-ma-filter" onchange="ladeFahrzeiten()" style="font-size:13px;padding:6px 10px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text)">
+          <option value="">Alle Mitarbeiter</option>
+        </select>
+        <button onclick="ladeFahrzeiten()" class="week-btn"><i class="ti ti-refresh"></i></button>
+      </div>
+      <div style="background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius-lg);overflow:hidden">
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead>
+            <tr style="background:var(--bg3)">
+              <th style="text-align:left;padding:8px 12px;font-size:11px;font-weight:500;color:var(--text2);border-bottom:0.5px solid var(--border)">Datum</th>
+              <th style="text-align:left;padding:8px 12px;font-size:11px;font-weight:500;color:var(--text2);border-bottom:0.5px solid var(--border)">Mitarbeiter</th>
+              <th style="text-align:left;padding:8px 12px;font-size:11px;font-weight:500;color:var(--text2);border-bottom:0.5px solid var(--border)">Von → Nach</th>
+              <th style="text-align:center;padding:8px 12px;font-size:11px;font-weight:500;color:var(--text2);border-bottom:0.5px solid var(--border)">Strecke</th>
+              <th style="text-align:center;padding:8px 12px;font-size:11px;font-weight:500;color:var(--text2);border-bottom:0.5px solid var(--border)">Fahrzeit</th>
+              <th style="text-align:center;padding:8px 12px;font-size:11px;font-weight:500;color:var(--text2);border-bottom:0.5px solid var(--border)">Angerechnet</th>
+              <th style="text-align:right;padding:8px 12px;font-size:11px;font-weight:500;color:var(--text2);border-bottom:0.5px solid var(--border)">Aktion</th>
+            </tr>
+          </thead>
+          <tbody id="fz-tbody">
+            <tr><td colspan="7" style="padding:32px;text-align:center;color:var(--text2)">Monat wählen und laden</td></tr>
+          </tbody>
+        </table>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:10px 14px;border-top:0.5px solid var(--border);background:var(--bg3)" id="fz-sumbar"></div>
+      </div>
+    </div>
+
+    <!-- FAHRZEITEN MODAL -->
+    <div class="modal-bg" id="fz-modal">
+      <div class="modal">
+        <h3 id="fz-modal-titel">Fahrzeit eintragen</h3>
+        <label>Datum</label>
+        <input type="date" id="fz-datum" style="width:100%;font-size:13px;padding:7px 10px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text)">
+        <label>Mitarbeiter</label>
+        <select id="fz-ma" style="width:100%;font-size:13px;padding:7px 10px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text)"></select>
+        <label>Von</label>
+        <input type="text" id="fz-von" placeholder="z.B. Heimatadresse" style="width:100%;font-size:13px;padding:7px 10px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text)">
+        <label>Nach</label>
+        <input type="text" id="fz-nach" placeholder="z.B. Kundenadresse" style="width:100%;font-size:13px;padding:7px 10px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text)">
+        <div class="r2">
+          <div>
+            <label>Strecke gesamt (km)</label>
+            <input type="number" id="fz-km" placeholder="z.B. 42" min="0" step="0.1"
+              style="width:100%;font-size:13px;padding:7px 10px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text)"
+              oninput="berechneMinutenAuto()">
+          </div>
+          <div>
+            <label>Fahrzeit gesamt (Min.)</label>
+            <input type="number" id="fz-min" placeholder="z.B. 60" min="0" step="5"
+              style="width:100%;font-size:13px;padding:7px 10px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text)">
+          </div>
+        </div>
+        <div style="font-size:10px;color:var(--text3);margin-top:4px">Hin- und Rückfahrt zusammen. Minuten werden aus km berechnet (60 km/h).</div>
+        <div style="background:var(--bg3);border-radius:var(--radius);padding:10px;margin-top:10px;display:flex;align-items:center;gap:8px">
+          <input type="checkbox" id="fz-angerechnet" style="width:16px;height:16px;accent-color:var(--green);cursor:pointer">
+          <label for="fz-angerechnet" style="font-size:13px;font-weight:500;cursor:pointer">Als Arbeitszeit anrechnen</label>
+        </div>
+        <div style="font-size:10px;color:var(--text3);margin-top:3px">Wird automatisch gesetzt wenn Strecke über 20km</div>
+        <div class="modal-btns">
+          <button class="mbtn-cancel" onclick="closeModal('fz-modal')">Abbrechen</button>
+          <button class="mbtn-del" id="fz-del" style="display:none" onclick="loescheFahrzeit()"><i class="ti ti-trash"></i></button>
+          <button class="mbtn-save" onclick="speichereFahrzeit()">Speichern</button>
+        </div>
       </div>
     </div>
 
@@ -2599,9 +2683,169 @@ function formatDatumChef(d) {
   return new Date(d+'T12:00:00').toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'})
 }
 
+// ── FAHRZEITEN CHEF ───────────────────────────────────────────
+let fahrzeitenDaten = []
+let editFahrzeitId = null
+
+function initFahrzeiten() {
+  const heute = new Date()
+  document.getElementById('fz-monat').value =
+    `${heute.getFullYear()}-${String(heute.getMonth()+1).padStart(2,'0')}`
+  const sel = document.getElementById('fz-ma-filter')
+  sel.innerHTML = '<option value="">Alle Mitarbeiter</option>'
+  mitarbeiter.forEach(m => {
+    const o = document.createElement('option')
+    o.value = m.id
+    o.textContent = m.nachname + (m.vorname?' '+m.vorname:'')
+    sel.appendChild(o)
+  })
+  ladeFahrzeiten()
+}
+
+async function ladeFahrzeiten() {
+  const monat = document.getElementById('fz-monat').value
+  const maId  = document.getElementById('fz-ma-filter').value
+  if(!monat) return
+  const [jahr, mon] = monat.split('-')
+  const von = `${jahr}-${mon}-01`
+  const bis = toISO(new Date(parseInt(jahr), parseInt(mon), 0))
+  document.getElementById('fz-tbody').innerHTML =
+    '<tr><td colspan="7" style="padding:24px;text-align:center"><div class="loading"><div class="spinner"></div></div></td></tr>'
+  try {
+    let filter = `datum=gte.${von}&datum=lte.${bis}&order=datum,mitarbeiter_id`
+    if(maId) filter += `&mitarbeiter_id=eq.${maId}`
+    fahrzeitenDaten = await sbGet('fahrtzeiten', filter+'&select=*')
+    renderFahrzeiten()
+  } catch(e) {
+    document.getElementById('fz-tbody').innerHTML =
+      `<tr><td colspan="7" style="padding:16px;color:var(--red-text)">${e.message}</td></tr>`
+  }
+}
+
+function renderFahrzeiten() {
+  const tbody = document.getElementById('fz-tbody')
+  if(!fahrzeitenDaten.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="padding:32px;text-align:center;color:var(--text2)">Keine Einträge für diesen Zeitraum</td></tr>'
+    document.getElementById('fz-sumbar').innerHTML = ''
+    return
+  }
+  tbody.innerHTML = fahrzeitenDaten.map(f => {
+    const ma = mitarbeiter.find(m=>m.id===f.mitarbeiter_id)
+    return `<tr style="border-bottom:0.5px solid var(--border)">
+      <td style="padding:8px 12px">${f.datum?.split('-').reverse().join('.')||'—'}</td>
+      <td style="padding:8px 12px;font-weight:500">${ma?.nachname||'?'}</td>
+      <td style="padding:8px 12px;font-size:11px;color:var(--text2);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f.von_adresse||'—'} → ${f.nach_adresse||'—'}</td>
+      <td style="padding:8px 12px;text-align:center">${f.distanz_km?f.distanz_km+' km':'—'}</td>
+      <td style="padding:8px 12px;text-align:center">${f.fahrzeit_min?f.fahrzeit_min+' min':'—'}</td>
+      <td style="padding:8px 12px;text-align:center">
+        <span style="font-size:10px;font-weight:500;padding:2px 8px;border-radius:8px;background:${f.angerechnet?'var(--green-bg)':'var(--bg3)'};color:${f.angerechnet?'var(--green-text)':'var(--text3)'}">
+          ${f.angerechnet?'✓ Ja':'—'}
+        </span>
+        ${f.angerechnet&&f.angerechnet_min?`<div style="font-size:10px;color:var(--green-text)">+${f.angerechnet_min} min</div>`:''}
+      </td>
+      <td style="padding:8px 12px;text-align:right">
+        <button onclick="openFahrzeitModal('${f.id}')"
+          style="background:none;border:0.5px solid var(--border2);border-radius:6px;padding:4px 8px;cursor:pointer;font-size:11px;color:var(--text2)">✏️</button>
+      </td>
+    </tr>`
+  }).join('')
+  const gesKm   = fahrzeitenDaten.reduce((s,f)=>s+(f.distanz_km||0),0)
+  const angerMin = fahrzeitenDaten.reduce((s,f)=>s+(f.angerechnet_min||0),0)
+  const angerAnz = fahrzeitenDaten.filter(f=>f.angerechnet).length
+  document.getElementById('fz-sumbar').innerHTML = `
+    <div><div style="font-size:10px;color:var(--text2);margin-bottom:2px">Einträge</div><div style="font-size:15px;font-weight:500">${fahrzeitenDaten.length}</div></div>
+    <div><div style="font-size:10px;color:var(--text2);margin-bottom:2px">Gesamt km</div><div style="font-size:15px;font-weight:500">${gesKm.toFixed(1)} km</div></div>
+    <div><div style="font-size:10px;color:var(--text2);margin-bottom:2px">Angerechnet</div><div style="font-size:15px;font-weight:500;color:var(--green)">${angerAnz}×</div></div>
+    <div><div style="font-size:10px;color:var(--text2);margin-bottom:2px">Angerechnete Min.</div><div style="font-size:15px;font-weight:500;color:var(--green)">${angerMin} min</div></div>`
+}
+
+function openFahrzeitModal(fzId) {
+  editFahrzeitId = fzId
+  document.getElementById('fz-modal-titel').textContent = fzId ? 'Fahrzeit bearbeiten' : 'Fahrzeit eintragen'
+  document.getElementById('fz-del').style.display = fzId ? 'block' : 'none'
+  const sel = document.getElementById('fz-ma')
+  sel.innerHTML = mitarbeiter.map(m=>`<option value="${m.id}">${m.nachname}${m.vorname?' '+m.vorname:''}</option>`).join('')
+  if(fzId) {
+    const f = fahrzeitenDaten.find(x=>x.id===fzId)
+    if(f) {
+      document.getElementById('fz-datum').value = f.datum||''
+      document.getElementById('fz-ma').value = f.mitarbeiter_id||''
+      document.getElementById('fz-von').value = f.von_adresse||''
+      document.getElementById('fz-nach').value = f.nach_adresse||''
+      document.getElementById('fz-km').value = f.distanz_km||''
+      document.getElementById('fz-min').value = f.fahrzeit_min||''
+      document.getElementById('fz-angerechnet').checked = f.angerechnet||false
+    }
+  } else {
+    document.getElementById('fz-datum').value = toISO(new Date())
+    document.getElementById('fz-von').value = ''
+    document.getElementById('fz-nach').value = ''
+    document.getElementById('fz-km').value = ''
+    document.getElementById('fz-min').value = ''
+    document.getElementById('fz-angerechnet').checked = false
+  }
+  document.getElementById('fz-modal').classList.add('open')
+}
+
+function berechneMinutenAuto() {
+  const km = parseFloat(document.getElementById('fz-km').value)
+  if(km > 0) {
+    document.getElementById('fz-min').value = Math.round(km / 60 * 60)
+    document.getElementById('fz-angerechnet').checked = km >= 20
+  }
+}
+
+async function speichereFahrzeit() {
+  const datum = document.getElementById('fz-datum').value
+  const maId  = document.getElementById('fz-ma').value
+  const km    = parseFloat(document.getElementById('fz-km').value) || null
+  const min   = parseInt(document.getElementById('fz-min').value) || null
+  const angerechnet = document.getElementById('fz-angerechnet').checked
+  if(!datum || !maId) { alert('Bitte Datum und Mitarbeiter auswählen'); return }
+  const data = {
+    mitarbeiter_id: maId, datum,
+    von_adresse:  document.getElementById('fz-von').value.trim() || null,
+    nach_adresse: document.getElementById('fz-nach').value.trim() || null,
+    distanz_km: km, fahrzeit_min: min,
+    angerechnet, angerechnet_min: angerechnet ? min : 0
+  }
+  try {
+    if(editFahrzeitId) await sbPatch('fahrtzeiten', editFahrzeitId, data)
+    else await sbPost('fahrtzeiten', data)
+    closeModal('fz-modal')
+    await ladeFahrzeiten()
+  } catch(e) { alert('Fehler: '+e.message) }
+}
+
+async function loescheFahrzeit() {
+  if(!editFahrzeitId || !confirm('Eintrag wirklich löschen?')) return
+  try {
+    await sbDelete('fahrtzeiten', editFahrzeitId)
+    closeModal('fz-modal')
+    await ladeFahrzeiten()
+  } catch(e) { alert('Fehler: '+e.message) }
+}
+
+async function berechneFahrzeitenManuell() {
+  if(!confirm('Fahrzeiten für heute automatisch berechnen?')) return
+  try {
+    const r = await fetch('https://grxpfsrctfhtamwrqooz.supabase.co/functions/v1/fahrzeit-berechnung', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdyeHBmc3JjdGZodGFtd3Jxb296Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5MjExMTUsImV4cCI6MjA5NTQ5NzExNX0.gNADsG6yxVv8T3_Vni7DrOrLoMBQbu57zhy5f8pALbI`,
+      },
+      body: JSON.stringify({ datum: toISO(new Date()) })
+    })
+    const data = await r.json()
+    alert(data.ok ? `✓ ${data.verarbeitet} Mitarbeiter berechnet` : 'Fehler: '+(data.error||'Unbekannt'))
+    if(data.ok) await ladeFahrzeiten()
+  } catch(e) { alert('Fehler: '+e.message) }
+}
+
 function setView(v) {
   curView = v
-  const views = ['dispoplan','cockpit','abwesenheit','export','mitarbeiter','objekte','design']
+  const views = ['dispoplan','cockpit','abwesenheit','fahrzeiten','export','mitarbeiter','objekte','design']
   views.forEach(name => {
     const el = document.getElementById('view-'+name)
     if(el) el.style.display = name===v ? 'block' : 'none'
@@ -2613,6 +2857,7 @@ function setView(v) {
   if(v === 'design')      initDesign()
   if(v === 'export')      initExport()
   if(v === 'abwesenheit') ladeAbwesenheitChef()
+  if(v === 'fahrzeiten')  initFahrzeiten()
 }
 
 // ── MONATSANSICHT ─────────────────────────────────────────────
