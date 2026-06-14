@@ -215,30 +215,10 @@
         notifyButton: { enable: false },
         allowLocalhostAsSecureOrigin: true,
       });
-      // Prüfen ob Push bereits erlaubt
-      const permission = OneSignal.Notifications.permission
-      if(permission) {
-        // Bereits erlaubt — als Chef registrieren
-        await OneSignal.login('chef')
-        document.getElementById('push-btn').style.display = 'none'
-      } else {
-        // Noch nicht erlaubt — Button anzeigen
-        document.getElementById('push-btn').style.display = 'block'
-      }
+      // OneSignal bereit markieren
+      window._oneSignalReady = true
+      console.log('OneSignal bereit')
     });
-
-    async function aktivierePush() {
-      if(!window.OneSignal) return
-      try {
-        await OneSignal.Notifications.requestPermission()
-        await OneSignal.login('chef')
-        document.getElementById('push-btn').style.display = 'none'
-        document.getElementById('push-btn').textContent = '✓ Push aktiv'
-        alert('Push-Benachrichtigungen sind jetzt aktiviert!')
-      } catch(e) {
-        alert('Push konnte nicht aktiviert werden: ' + e.message)
-      }
-    }
   </script>
 </head>
 <body>
@@ -969,14 +949,14 @@ function pinSperren() {
 }
 
 async function registriereChefPush(chefId) {
-  // Warten bis OneSignal bereit ist
+  // Warten bis OneSignal vollständig initialisiert ist
   let versuche = 0
-  while(!window.OneSignal && versuche < 20) {
+  while(!window._oneSignalReady && versuche < 30) {
     await new Promise(r => setTimeout(r, 500))
     versuche++
   }
-  if(!window.OneSignal) {
-    console.log('OneSignal nicht geladen — Push-Button zeigen')
+  if(!window._oneSignalReady || !window.OneSignal) {
+    console.log('OneSignal nicht bereit — Push-Button zeigen')
     document.getElementById('push-btn').style.display = 'block'
     return
   }
@@ -1003,7 +983,16 @@ async function registriereChefPush(chefId) {
 
 // Push-Button für Chef
 async function aktiviereChefPush() {
-  if(!window.OneSignal) { alert('OneSignal nicht geladen — bitte Seite neu laden'); return }
+  // Warten bis OneSignal vollständig initialisiert ist
+  let versuche = 0
+  while(!window._oneSignalReady && versuche < 30) {
+    await new Promise(r => setTimeout(r, 500))
+    versuche++
+  }
+  if(!window._oneSignalReady || !window.OneSignal) {
+    alert('Push-Dienst konnte nicht geladen werden.\n\nBitte prüfe:\n• Internetverbindung stabil?\n• Safari statt Chrome auf iPhone/iPad verwenden\n• Seite neu laden und nochmal versuchen')
+    return
+  }
   try {
     console.log('Push aktivieren...')
     await OneSignal.Notifications.requestPermission()
