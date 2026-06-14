@@ -449,7 +449,7 @@
         </div>
         <button onclick="ladeExportDaten()" style="background:var(--text);color:var(--bg2);border:none;border-radius:var(--radius);padding:8px 16px;font-size:13px;cursor:pointer;white-space:nowrap">Laden</button>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px" id="ex-typen"></div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px" id="ex-typen"></div>
       <div style="background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius-lg);overflow:hidden">
         <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:0.5px solid var(--border);background:var(--bg3)">
           <div style="font-size:13px;font-weight:500" id="ex-titel">Bitte Zeitraum wählen und laden</div>
@@ -718,6 +718,7 @@
     </div>
     <label>Telefon</label><input type="tel" id="mm-tel" placeholder="+49 151 ...">
     <label>E-Mail</label><input type="email" id="mm-mail">
+    <label>Geburtsdatum</label><input type="date" id="mm-geburt" style="width:100%;font-size:13px;padding:7px 10px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text)">
     <div class="r2">
       <div><label>Stundenlohn (€)</label><input type="number" id="mm-lohn" step="0.50" min="12" placeholder="14.00"></div>
       <div><label>Soll-Stunden/Woche</label><input type="number" id="mm-std" min="1" max="40" placeholder="20"></div>
@@ -1521,6 +1522,7 @@ function openMaModal(maId) {
       document.getElementById('mm-vor').value = m.vorname||''
       document.getElementById('mm-tel').value = m.telefon||''
       document.getElementById('mm-mail').value = m.email||''
+      document.getElementById('mm-geburt').value = m.geburtsdatum||''
       document.getElementById('mm-lohn').value = m.stundenlohn||''
       document.getElementById('mm-std').value = m.wochenstunden||''
       document.getElementById('mm-spr').value = m.sprache||'de'
@@ -1530,6 +1532,7 @@ function openMaModal(maId) {
     }
   } else {
     ['mm-nach','mm-vor','mm-tel','mm-mail','mm-lohn','mm-std','mm-heimat'].forEach(id=>document.getElementById(id).value='')
+    document.getElementById('mm-geburt').value = ''
     document.getElementById('mm-spr').value = 'de'
     document.getElementById('mm-farbe').value = '0'
     document.getElementById('mm-fahrzeit-aus').checked = false
@@ -1545,6 +1548,7 @@ async function saveMa() {
     vorname: document.getElementById('mm-vor').value.trim() || null,
     telefon: document.getElementById('mm-tel').value.trim() || null,
     email: document.getElementById('mm-mail').value.trim() || null,
+    geburtsdatum: document.getElementById('mm-geburt').value || null,
     stundenlohn: parseFloat(document.getElementById('mm-lohn').value) || null,
     wochenstunden: parseInt(document.getElementById('mm-std').value) || null,
     sprache: document.getElementById('mm-spr').value,
@@ -2367,8 +2371,10 @@ const EXPORT_TYPEN = [
     cols:['Datum','Mitarbeiter','Ende','Fahrt nach','Abfahrt'] },
   { id:'abweichung', label:'Abweichungsprotokoll', icon:'ti-alert-triangle', farbe:'#FAECE7', farbeTxt:'#712B13', beschreibung:'Alle Abweichungen mit Begründung',
     cols:['Datum','Mitarbeiter','Objekt','Soll-Ende','Ist-Ende','Abw.','Begründung'] },
-  { id:'gesamt', label:'Gesamtbericht', icon:'ti-file-text', farbe:'#EAF3DE', farbeTxt:'#27500A', beschreibung:'Monatszusammenfassung',
-    cols:['Bereich','Wert','Info'] },
+  { id:'kundenliste', label:'Kundenliste', icon:'ti-building', farbe:'#E6F1FB', farbeTxt:'#0C447C', beschreibung:'Alle Objekte & Kunden mit Stammdaten',
+    cols:['Name','Adresse','Ansprechpartner','Telefon','Monatspauschale','Std/Monat','Stundensatz','Aktiv'] },
+  { id:'mitarbeiterliste', label:'Mitarbeiterliste', icon:'ti-users', farbe:'#E1F5EE', farbeTxt:'#085041', beschreibung:'Alle Mitarbeiter mit Stammdaten',
+    cols:['Nachname','Vorname','Geburtsdatum','Telefon','E-Mail','Stundenlohn','Std/Woche','Sprache','Heimatadresse'] },
 ]
 function initExport() {
   const heute = new Date()
@@ -2392,7 +2398,12 @@ function setExportTyp(typ) {
   document.querySelectorAll('[id^="extyp-"]').forEach(el => {
     el.style.border = el.id==='extyp-'+typ ? '1.5px solid var(--text)' : '0.5px solid var(--border)'
   })
-  if(exportDaten.length) renderExportTabelle()
+  // Filter ausblenden bei Stammdaten-Typen
+  const ohneFilter = ['kundenliste','mitarbeiterliste']
+  const filterEl = document.querySelector('#view-export > div:nth-child(2)')
+  if(filterEl) filterEl.style.display = ohneFilter.includes(typ) ? 'none' : 'grid'
+  if(ohneFilter.includes(typ)) renderExportTabelle()
+  else if(exportDaten.length) renderExportTabelle()
 }
 async function ladeExportDaten() {
   const von=document.getElementById('ex-von').value, bis=document.getElementById('ex-bis').value
@@ -2412,7 +2423,7 @@ async function ladeExportDaten() {
     renderExportTabelle()
   } catch(e) { document.getElementById('ex-tbody').innerHTML=`<tr><td colspan="14" style="padding:16px;color:var(--red-text)">${e.message}</td></tr>` }
 }
-function renderExportTabelle() {
+async function renderExportTabelle() {
   const von=document.getElementById('ex-von').value, bis=document.getElementById('ex-bis').value
   const typ=EXPORT_TYPEN.find(t=>t.id===exportTyp)
   document.getElementById('ex-titel').textContent=`${typ.label} · ${von.split('-').reverse().join('.')} – ${bis.split('-').reverse().join('.')}`
@@ -2454,6 +2465,50 @@ function renderExportTabelle() {
     const absch=exportDaten.filter(a=>a.status==='abgeschlossen').length
     const mu=Array.from(new Set(exportDaten.map(a=>a.objekt_id))).reduce((s,id)=>s+(objekte.find(o=>o.id===id)?.monatspreis||0),0)
     rows=[['Aufträge gesamt',exportDaten.length,'im Zeitraum'],['Abgeschlossen',absch,Math.round(absch/(exportDaten.length||1)*100)+'%'],['Soll-Stunden',sh.toFixed(1)+'h','alle MA'],['Aktive Objekte',new Set(exportDaten.map(a=>a.objekt_id)).size,''],['Monatsumsatz',fmtEur(mu),'Hochrechnung'],['Lohnkosten',fmtEur(sh*14),'ca. 14€/h'],['Rohertrag',mu>0?Math.round((mu-sh*14)/mu*100)+'%':'—','nach Lohnkosten'],['Abweichungen',exportDaten.filter(a=>a.zeit?.abweichung_minuten&&Math.abs(a.zeit.abweichung_minuten)>5).length,'mit Begründung']]
+  } else if(exportTyp==='kundenliste') {
+    // Alle Objekte aus Supabase laden
+    const alleObjekte = await sbGet('objekte', 'order=name&select=*')
+    rows = alleObjekte.map(o => {
+      const stdsatz = o.monatsstunden ? (o.monatspreis/o.monatsstunden).toFixed(2)+'€/h' : '—'
+      return [
+        o.name||'—',
+        o.adresse||'—',
+        o.ansprechpartner||'—',
+        o.telefon||'—',
+        o.monatspreis ? fmtEur(o.monatspreis) : '—',
+        o.monatsstunden ? o.monatsstunden+'h' : '—',
+        stdsatz,
+        o.aktiv ? 'Aktiv' : 'Inaktiv',
+      ]
+    })
+    const gesamtUmsatz = alleObjekte.filter(o=>o.aktiv).reduce((s,o)=>s+(o.monatspreis||0),0)
+    sumbar = [
+      {l:'Kunden gesamt', v:alleObjekte.length},
+      {l:'Aktiv', v:alleObjekte.filter(o=>o.aktiv).length},
+      {l:'Monatsumsatz gesamt', v:fmtEur(gesamtUmsatz)},
+      {l:'Jahresumsatz (Hochrechnung)', v:fmtEur(gesamtUmsatz*12)},
+    ]
+  } else if(exportTyp==='mitarbeiterliste') {
+    // Alle Mitarbeiter aus Supabase laden inkl. Geburtsdatum
+    const alleMA = await sbGet('mitarbeiter', 'order=nachname&select=*')
+    const SPR = {de:'Deutsch', pl:'Polnisch', ru:'Russisch', ro:'Rumänisch', uk:'Ukrainisch'}
+    rows = alleMA.map(m => [
+      m.nachname||'—',
+      m.vorname||'—',
+      m.geburtsdatum ? new Date(m.geburtsdatum+'T12:00:00').toLocaleDateString('de-DE') : '—',
+      m.telefon||'—',
+      m.email||'—',
+      m.stundenlohn ? m.stundenlohn.toFixed(2)+'€/h' : '—',
+      m.wochenstunden ? m.wochenstunden+'h/Wo' : '—',
+      SPR[m.sprache]||m.sprache||'—',
+      m.heimatadresse||'—',
+    ])
+    sumbar = [
+      {l:'Mitarbeiter gesamt', v:alleMA.length},
+      {l:'Aktiv', v:alleMA.filter(m=>m.aktiv).length},
+      {l:'Polnischsprachig', v:alleMA.filter(m=>m.sprache==='pl').length},
+      {l:'Ø Stundenlohn', v:alleMA.length ? (alleMA.reduce((s,m)=>s+(m.stundenlohn||0),0)/alleMA.length).toFixed(2)+'€' : '—'},
+    ]
   }
   document.getElementById('ex-tbody').innerHTML=rows.length
     ? rows.map(r=>'<tr>'+r.map(c=>`<td style="padding:6px 10px;border-bottom:0.5px solid var(--border);white-space:nowrap">${c??'—'}</td>`).join('')+'</tr>').join('')
@@ -2465,7 +2520,11 @@ function exportCSV() {
   if(!window._exportRows?.length){alert('Bitte zuerst Daten laden');return}
   const csv=[window._exportCols,...window._exportRows].map(r=>r.map(v=>`"${(v??'').toString().replace(/"/g,'""')}"`).join(';')).join('\n')
   const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}))
-  a.download=`RJCD_${exportTyp}_${document.getElementById('ex-von').value}_${document.getElementById('ex-bis').value}.csv`; a.click()
+  const ohneFilter = ['kundenliste','mitarbeiterliste']
+  const dateiname = ohneFilter.includes(exportTyp)
+    ? `RJCD_${exportTyp}_${new Date().toISOString().split('T')[0]}.csv`
+    : `RJCD_${exportTyp}_${document.getElementById('ex-von').value}_${document.getElementById('ex-bis').value}.csv`
+  a.download = dateiname; a.click()
 }
 
 // ── ABWESENHEIT CHEF ─────────────────────────────────────────
