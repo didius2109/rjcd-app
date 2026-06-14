@@ -1692,6 +1692,9 @@ async function loescheObjEndgueltig() {
     alert('✓ Objekt wurde endgültig gelöscht.')
   } catch(e) { alert('Fehler: '+e.message) }
 }
+
+async function deleteObj() {
+  if(!editObjId || !confirm('Objekt wirklich deaktivieren?')) return
   try {
     await sbPatch('objekte', editObjId, {aktiv: false})
     closeModal('obj-modal')
