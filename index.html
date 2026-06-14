@@ -1333,6 +1333,33 @@ async function toggleInaktiveObjekte() {
   }
 }
 
+function renderObjGrid() {
+  if(!objekte.length) {
+    document.getElementById('obj-grid').innerHTML = '<div style="color:var(--text2);font-size:13px;padding:20px">Noch keine Objekte angelegt.</div>'
+    return
+  }
+  document.getElementById('obj-grid').innerHTML = objekte.map(o => {
+    const stdsatz = o.monatsstunden ? (o.monatspreis/o.monatsstunden).toFixed(2) : null
+    return `<div class="card" onclick="openObjModal('${o.id}')">
+      <div class="card-top">
+        <div class="av" style="background:var(--bg3);color:var(--text2);width:36px;height:36px;font-size:12px">
+          <i class="ti ti-building" style="font-size:16px"></i>
+        </div>
+        <div>
+          <div class="card-name">${o.name}</div>
+          <div class="card-sub">${o.adresse||'Keine Adresse'}</div>
+        </div>
+      </div>
+      <div class="detail-grid">
+        <div class="detail-box"><div class="dl">Monatspauschale</div><div class="dv" style="color:var(--green)">${o.monatspreis?fmtEur(o.monatspreis):'—'}</div></div>
+        <div class="detail-box"><div class="dl">Stundensatz</div><div class="dv">${stdsatz?stdsatz+'€/h':'—'}</div></div>
+        <div class="detail-box"><div class="dl">Soll-Stunden/Mo</div><div class="dv">${o.monatsstunden?o.monatsstunden+'h':'—'}</div></div>
+        <div class="detail-box"><div class="dl">Ansprechpartner</div><div class="dv" style="font-size:11px">${o.ansprechpartner||'—'}</div></div>
+      </div>
+    </div>`
+  }).join('')
+}
+
 function renderObjGridMitInaktiven(alle) {
   if(!alle.length) {
     document.getElementById('obj-grid').innerHTML = '<div style="color:var(--text2);font-size:13px;padding:20px">Keine Objekte vorhanden.</div>'
