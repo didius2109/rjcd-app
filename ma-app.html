@@ -801,6 +801,57 @@ async function sendeAbwesenheit() {
 }
 
 // ── DATEN LADEN ───────────────────────────────────────────────
+// ── ÜBERSETZUNG ───────────────────────────────────────────────
+const uebersetzungsCache = {}  // Cache damit gleiche Texte nicht doppelt übersetzt werden
+
+async function uebersetzeAufgaben(aufgaben, zielsprache) {
+  if(zielsprache === 'de') return aufgaben  // Kein Übersetzen nötig
+  if(!aufgaben.length) return aufgaben
+
+  // Nur Aufgaben die noch nicht übersetzt wurden
+  const zuUebersetzen = aufgaben.filter(ag => !uebersetzungsCache[ag.beschreibung + '_' + zielsprache])
+
+  if(zuUebersetzen.length > 0) {
+    try {
+      const texte = zuUebersetzen.map(ag => ag.beschreibung).join('\n')
+      const sprache = zielsprache === 'pl' ? 'Polnisch' : zielsprache === 'ru' ? 'Russisch' : zielsprache === 'ro' ? 'Rumänisch' : 'Ukrainisch'
+
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 1000,
+          messages: [{
+            role: 'user',
+            content: `Übersetze diese Reinigungsaufgaben ins ${sprache}. Gib NUR die übersetzten Zeilen zurück, eine pro Zeile, in der gleichen Reihenfolge. Keine Erklärungen.\n\n${texte}`
+          }]
+        })
+      })
+
+      const data = await response.json()
+      const uebersetzt = data.content?.[0]?.text?.trim().split('\n') || []
+
+      // In Cache speichern
+      zuUebersetzen.forEach((ag, i) => {
+        if(uebersetzt[i]) {
+          uebersetzungsCache[ag.beschreibung + '_' + zielsprache] = uebersetzt[i].trim()
+        }
+      })
+    } catch(e) {
+      console.log('Übersetzung fehlgeschlagen:', e.message)
+      // Bei Fehler original behalten
+    }
+  }
+
+  // Übersetzte Versionen zurückgeben
+  return aufgaben.map(ag => ({
+    ...ag,
+    beschreibung: uebersetzungsCache[ag.beschreibung + '_' + zielsprache] || ag.beschreibung
+  }))
+}
+
+// ── AUFTRÄGE LADEN ────────────────────────────────────────────
 async function ladeAuftraege(){
   document.getElementById('main').innerHTML=`<div class="leer"><div class="spin2" style="width:28px;height:28px;margin:0 auto 12px"></div><p>${t('laden')}</p></div>`
   try{
@@ -822,6 +873,14 @@ async function ladeAuftraege(){
     }
     try{const nz=await sbGet('v_nebenzeiten_pro_ma',`mitarbeiter_id=eq.${curMa.id}&select=nebenzeit_min_pro_woche`);if(nz.length)nebenzeit=nz[0].nebenzeit_min_pro_woche||65}catch(e){}
     auftraege=data.map(a=>({...a,objekt:objMap[a.objekt_id]||{name:'?'},aufgaben:aufgMap[a.id]||[],zeit:zeitMap[a.id]||null}))
+
+    // Aufgaben übersetzen wenn MA nicht Deutsch spricht
+    if(lang !== 'de') {
+      auftraege = await Promise.all(auftraege.map(async a => ({
+        ...a,
+        aufgaben: await uebersetzeAufgaben(a.aufgaben, lang)
+      })))
+    }
     // Steps wiederherstellen
     auftraege.forEach((a,i)=>{
       const z=a.zeit
