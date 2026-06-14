@@ -618,7 +618,13 @@
     <div id="view-objekte" style="display:none">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
         <div style="font-size:16px;font-weight:500">Objekte &amp; Kunden</div>
-        <button class="btn-primary" onclick="openObjModal(null)"><i class="ti ti-plus"></i> Neu</button>
+        <div style="display:flex;gap:8px">
+          <button id="obj-inaktiv-btn" onclick="toggleInaktiveObjekte()"
+            style="background:none;border:0.5px solid var(--border2);border-radius:var(--radius);padding:6px 12px;font-size:12px;cursor:pointer;color:var(--text2)">
+            Inaktive anzeigen
+          </button>
+          <button class="btn-primary" onclick="openObjModal(null)"><i class="ti ti-plus"></i> Neu</button>
+        </div>
       </div>
       <div class="card-grid" id="obj-grid">
         <div class="loading"><div class="spinner"></div> Lade Objekte...</div>
@@ -814,6 +820,7 @@
     <div class="modal-btns">
       <button class="mbtn-cancel" onclick="closeModal('obj-modal')">Abbrechen</button>
       <button class="mbtn-del" id="om-del" style="display:none" onclick="deleteObj()"><i class="ti ti-trash"></i> Deaktivieren</button>
+      <button class="mbtn-del" id="om-del-endg" style="display:none;background:var(--red);color:#fff;border-color:var(--red)" onclick="loescheObjEndgueltig()"><i class="ti ti-trash"></i> Endgültig löschen</button>
       <button class="mbtn-save" onclick="saveObj()">Speichern</button>
     </div>
   </div>
@@ -1303,34 +1310,68 @@ function renderMaGrid() {
 }
 
 // ── OBJEKTE VIEW ──────────────────────────────────────────────
-function renderObjGrid() {
-  if(!objekte.length) {
-    document.getElementById('obj-grid').innerHTML = '<div style="color:var(--text2);font-size:13px;padding:20px">Noch keine Objekte angelegt.</div>'
+// ── OBJEKTE INAKTIVE ─────────────────────────────────────────
+let zeigeInaktiveObjekte = false
+
+async function toggleInaktiveObjekte() {
+  zeigeInaktiveObjekte = !zeigeInaktiveObjekte
+  const btn = document.getElementById('obj-inaktiv-btn')
+  if(zeigeInaktiveObjekte) {
+    btn.style.background = 'var(--amber-bg)'
+    btn.style.color = 'var(--amber-text)'
+    btn.style.border = '0.5px solid var(--amber)'
+    btn.textContent = 'Nur Aktive anzeigen'
+    // Alle Objekte laden inkl. inaktive
+    const alle = await sbGet('objekte', 'order=name&select=*')
+    renderObjGridMitInaktiven(alle)
+  } else {
+    btn.style.background = 'none'
+    btn.style.color = 'var(--text2)'
+    btn.style.border = '0.5px solid var(--border2)'
+    btn.textContent = 'Inaktive anzeigen'
+    renderObjGrid()
+  }
+}
+
+function renderObjGridMitInaktiven(alle) {
+  if(!alle.length) {
+    document.getElementById('obj-grid').innerHTML = '<div style="color:var(--text2);font-size:13px;padding:20px">Keine Objekte vorhanden.</div>'
     return
   }
-  document.getElementById('obj-grid').innerHTML = objekte.map(o => {
+  document.getElementById('obj-grid').innerHTML = alle.map(o => {
     const stdsatz = o.monatsstunden ? (o.monatspreis/o.monatsstunden).toFixed(2) : null
-    return `<div class="card" onclick="openObjModal('${o.id}')">
+    const istInaktiv = !o.aktiv
+    return `<div class="card" onclick="openInaktivObjModal('${o.id}',${istInaktiv})"
+      style="${istInaktiv?'opacity:0.6;border-color:var(--red-bg)':''}">
       <div class="card-top">
-        <div class="av" style="background:var(--bg3);color:var(--text2);width:36px;height:36px;font-size:12px">
+        <div class="av" style="background:${istInaktiv?'var(--red-bg)':'var(--bg3)'};color:${istInaktiv?'var(--red-text)':'var(--text2)'};width:36px;height:36px;font-size:12px">
           <i class="ti ti-building" style="font-size:16px"></i>
         </div>
         <div>
-          <div class="card-name">${o.name}</div>
+          <div class="card-name">${o.name}${istInaktiv?' <span style="font-size:10px;background:var(--red-bg);color:var(--red-text);padding:1px 6px;border-radius:8px;font-weight:500">Inaktiv</span>':''}</div>
           <div class="card-sub">${o.adresse||'Keine Adresse'}</div>
         </div>
       </div>
       <div class="detail-grid">
         <div class="detail-box"><div class="dl">Monatspauschale</div><div class="dv" style="color:var(--green)">${o.monatspreis?fmtEur(o.monatspreis):'—'}</div></div>
         <div class="detail-box"><div class="dl">Stundensatz</div><div class="dv">${stdsatz?stdsatz+'€/h':'—'}</div></div>
-        <div class="detail-box"><div class="dl">Soll-Stunden/Mo</div><div class="dv">${o.monatsstunden?o.monatsstunden+'h':'—'}</div></div>
-        <div class="detail-box"><div class="dl">Ansprechpartner</div><div class="dv" style="font-size:11px">${o.ansprechpartner||'—'}</div></div>
       </div>
     </div>`
   }).join('')
 }
 
-// ── MODALS ────────────────────────────────────────────────────
+async function openInaktivObjModal(objId, istInaktiv) {
+  // Inaktive Objekte temporär in die lokale Liste aufnehmen für das Modal
+  if(istInaktiv) {
+    const alleObjekte = await sbGet('objekte', `id=eq.${objId}&select=*`)
+    if(alleObjekte.length && !objekte.find(o=>o.id===objId)) {
+      objekte.push(alleObjekte[0])
+    }
+  }
+  openObjModal(objId)
+}
+ 
+
 function closeModal(id) { document.getElementById(id).classList.remove('open') }
 
 function openAuftragModal(auftragId, maId, datum) {
@@ -1581,7 +1622,11 @@ async function deleteMa() {
 function openObjModal(objId) {
   editObjId = objId
   document.getElementById('obj-modal-title').textContent = objId ? 'Objekt bearbeiten' : 'Neues Objekt'
-  document.getElementById('om-del').style.display = objId ? 'block' : 'none'
+  // Buttons je nach Status
+  const obj = objId ? objekte.find(x=>x.id===objId) : null
+  const istInaktiv = obj && !obj.aktiv
+  document.getElementById('om-del').style.display = objId && !istInaktiv ? 'block' : 'none'
+  document.getElementById('om-del-endg').style.display = istInaktiv ? 'block' : 'none'
   if(objId) {
     const o = objekte.find(x=>x.id===objId)
     if(o) {
@@ -1633,8 +1678,20 @@ async function saveObj() {
   } catch(e) { alert('Fehler: ' + e.message) }
 }
 
-async function deleteObj() {
-  if(!editObjId || !confirm('Objekt wirklich deaktivieren?')) return
+async function loescheObjEndgueltig() {
+  if(!editObjId) return
+  const obj = objekte.find(x=>x.id===editObjId) || {name:'?'}
+  if(!confirm(`"${obj.name}" endgültig löschen?\n\nDieser Vorgang kann nicht rückgängig gemacht werden!`)) return
+  try {
+    await sbDelete('objekte', editObjId)
+    closeModal('obj-modal')
+    // Aus lokaler Liste entfernen
+    objekte = objekte.filter(o=>o.id!==editObjId)
+    renderObjGrid()
+    renderKPI()
+    alert('✓ Objekt wurde endgültig gelöscht.')
+  } catch(e) { alert('Fehler: '+e.message) }
+}
   try {
     await sbPatch('objekte', editObjId, {aktiv: false})
     closeModal('obj-modal')
@@ -2393,7 +2450,7 @@ function initExport() {
       <div style="font-size:10px;color:var(--text2)">${t.beschreibung}</div>
     </div>`).join('')
 }
-function setExportTyp(typ) {
+async function setExportTyp(typ) {
   exportTyp = typ
   document.querySelectorAll('[id^="extyp-"]').forEach(el => {
     el.style.border = el.id==='extyp-'+typ ? '1.5px solid var(--text)' : '0.5px solid var(--border)'
@@ -2402,8 +2459,8 @@ function setExportTyp(typ) {
   const ohneFilter = ['kundenliste','mitarbeiterliste']
   const filterEl = document.querySelector('#view-export > div:nth-child(2)')
   if(filterEl) filterEl.style.display = ohneFilter.includes(typ) ? 'none' : 'grid'
-  if(ohneFilter.includes(typ)) renderExportTabelle()
-  else if(exportDaten.length) renderExportTabelle()
+  if(ohneFilter.includes(typ)) await renderExportTabelle()
+  else if(exportDaten.length) await renderExportTabelle()
 }
 async function ladeExportDaten() {
   const von=document.getElementById('ex-von').value, bis=document.getElementById('ex-bis').value
@@ -2420,7 +2477,7 @@ async function ladeExportDaten() {
       const zm={}; zeiten.forEach(z=>zm[z.auftrag_id]=z)
       exportDaten.forEach(a=>a.zeit=zm[a.id]||null)
     }
-    renderExportTabelle()
+    await renderExportTabelle()
   } catch(e) { document.getElementById('ex-tbody').innerHTML=`<tr><td colspan="14" style="padding:16px;color:var(--red-text)">${e.message}</td></tr>` }
 }
 async function renderExportTabelle() {
