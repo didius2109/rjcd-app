@@ -1094,9 +1094,7 @@ async function init() {
     wendeDesignAn(d)
     try { abwesenheitenChef = await sbGet('abwesenheiten', 'status=eq.genehmigt&select=*') } catch(e) { abwesenheitenChef = [] }
     await loadWoche()
-    renderMaGrid()
-    renderObjGrid()
-    // PIN-Login
+    // PIN-Login — renderMaGrid/renderObjGrid werden nach Login aufgerufen
     await initPinLogin()
     if(!pruefePinSession()) {
       // Zeige PIN-Overlay
