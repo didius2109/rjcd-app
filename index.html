@@ -922,10 +922,12 @@ function pinErfolgreich(chef) {
   sessionStorage.setItem('chefLogin', JSON.stringify({id:chef.id, name:chef.name, ts:Date.now()}))
   document.getElementById('pin-overlay').style.display = 'none'
   document.getElementById('app-main').style.display = 'grid'
-  // Daten neu rendern nach Login
-  renderMaGrid()
-  renderObjGrid()
-  renderKPI()
+  // Daten neu rendern nach Login — setTimeout damit alle Funktionen geladen sind
+  setTimeout(() => {
+    if(typeof renderMaGrid === 'function') renderMaGrid()
+    if(typeof renderObjGrid === 'function') renderObjGrid()
+    if(typeof renderKPI === 'function') renderKPI()
+  }, 100)
   startInaktivTimer()
   // Push für Chef registrieren
   registriereChefPush(chef.id)
